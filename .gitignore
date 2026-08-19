@@ -1,0 +1,24 @@
+# Dependencies
+/node_modules
+/.pnpm
+/.yarn
+
+# Next.js build outputs
+/.next/
+/out/
+/build
+
+# Environment files
+.env
+.env*.local
+!.env.example
+
+# Antigravity artifacts & logs
+.gemini/
+/scratch
+
+# IDE & OS files
+.DS_Store
+*.pem
+.vscode/
+.idea/
