@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Receipt, Cpu, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Cpu } from 'lucide-react';
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export function AdminHeader() {
   const navItems = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Store', href: '/admin/store', icon: ShoppingBag },
+    { label: 'Catalogue', href: '/admin/catalogue', icon: Sparkles },
     { label: 'Billing', href: '/admin/billing', icon: Receipt },
   ];
 
