@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
-import { createBillAction, matchProductPhotoAction, BillItemPayload, CreateBillResult } from '@/lib/actions/billing';
-import { Receipt, Camera, Plus, Trash2, CheckCircle2, FileText, Sparkles, Printer, ArrowRight } from 'lucide-react';
+import { executeEndToEndBillingCascadeAction, matchProductPhotoAction, BillItemPayload, CreateBillResult } from '@/lib/actions/billing';
+import { Receipt, Camera, Plus, Trash2, CheckCircle2, Sparkles, Printer, ArrowRight, TrendingUp, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminBillingPage() {
@@ -14,7 +14,7 @@ export default function AdminBillingPage() {
   const [customerName, setCustomerName] = useState('Priya Sharma');
   const [customerPhone, setCustomerPhone] = useState('9876543210');
 
-  // Items List
+  // Captured Items List
   const [items, setItems] = useState<BillItemPayload[]>([
     {
       product_id: 'SAR-00001',
@@ -37,7 +37,7 @@ export default function AdminBillingPage() {
   const [newItemPrice, setNewItemPrice] = useState('');
   const [matchingPhoto, setMatchingPhoto] = useState(false);
 
-  // Bill Result
+  // End-to-End Cascade Result
   const [billResult, setBillResult] = useState<CreateBillResult | null>(null);
 
   const handleCaptureAndMatch = async () => {
@@ -75,7 +75,7 @@ export default function AdminBillingPage() {
     if (items.length === 0 || !customerName || !customerPhone) return;
 
     startTransition(async () => {
-      const result = await createBillAction({
+      const result = await executeEndToEndBillingCascadeAction({
         customer_name: customerName,
         customer_phone: customerPhone,
         items,
@@ -97,23 +97,23 @@ export default function AdminBillingPage() {
               <h1 className="font-serif text-2xl font-bold">Physical Store Billing Desk</h1>
             </div>
             <p className="text-xs text-purple-200 mt-1">
-              Capture physical garment photos, auto-match existing inventory, set selling prices, and issue PDF bills instantaneously.
+              Complete End-to-End Cascade: Bill $\rightarrow$ PDF $\rightarrow$ Order $\rightarrow$ Inventory $\rightarrow$ Revenue/Profit $\rightarrow$ Customer History $\rightarrow$ Dashboard $\rightarrow$ AI Follow-up Trigger.
             </p>
           </div>
           <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold">
-            Real-Time PDF Generator
+            Controlled Tool Cascade
           </span>
         </div>
 
         {billResult ? (
-          /* Bill Confirmation & PDF Invoice View */
+          /* Bill Confirmation & End-to-End Cascade Result */
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg space-y-6 max-w-3xl mx-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-gray-900">Bill Issued Successfully!</h2>
-                  <p className="text-xs text-gray-500">Bill Number: <span className="font-mono font-bold text-purple-950">{billResult.billNumber}</span></p>
+                  <h2 className="font-serif text-2xl font-bold text-gray-900">End-to-End Transaction Cascade Complete!</h2>
+                  <p className="text-xs text-gray-500">Bill No: <span className="font-mono font-bold text-purple-950">{billResult.billNumber}</span> • Order: <span className="font-mono font-bold text-purple-950">{billResult.orderId}</span></p>
                 </div>
               </div>
               <button
@@ -124,7 +124,27 @@ export default function AdminBillingPage() {
               </button>
             </div>
 
-            {/* Rendered PDF Invoice Preview */}
+            {/* Cascade Flow Summary Pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                <span className="text-[10px] font-bold text-emerald-700 uppercase block">1. Inventory</span>
+                <span className="font-bold text-emerald-950 text-xs">Stock Decremented</span>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 p-3 rounded-xl">
+                <span className="text-[10px] font-bold text-purple-700 uppercase block">2. Revenue/Profit</span>
+                <span className="font-bold text-purple-950 text-xs">+₹{billResult.totalAmount.toLocaleString()} Logged</span>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                <span className="text-[10px] font-bold text-blue-700 uppercase block">3. Customer History</span>
+                <span className="font-bold text-blue-950 text-xs">LTV & Orders Updated</span>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
+                <span className="text-[10px] font-bold text-amber-700 uppercase block">4. AI Follow-Up</span>
+                <span className="font-bold text-amber-950 text-xs">{billResult.followupGenerated ? 'Queued for Approval' : 'Checked'}</span>
+              </div>
+            </div>
+
+            {/* PDF Invoice Rendered Preview */}
             <div className="border-2 border-dashed border-gray-200 p-6 rounded-xl bg-gray-50/50 space-y-4 font-mono text-xs">
               <div className="text-center border-b border-gray-200 pb-4 space-y-1">
                 <h3 className="font-serif text-xl font-bold text-purple-950 font-sans">SAREETHI FASHION RETAIL</h3>
@@ -158,32 +178,39 @@ export default function AdminBillingPage() {
               </div>
             </div>
 
-            {/* AI Follow-Up Alert Banner */}
+            {/* AI Follow-Up Draft */}
             {billResult.followupGenerated && (
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-purple-950 font-bold text-xs">
-                  <Sparkles className="w-4 h-4 text-amber-500" /> AI Follow-Up Recommendation Generated
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-bold text-purple-950 text-xs">
+                    <Sparkles className="w-4 h-4 text-amber-500" /> AI Follow-Up Recommendation Created
+                  </span>
+                  <Link href="/admin/approvals" className="text-xs font-bold text-purple-950 underline hover:text-purple-800">
+                    Review In Queue $\rightarrow$
+                  </Link>
                 </div>
-                <p className="text-xs text-purple-800 leading-relaxed">
+                <p className="text-xs text-purple-800 bg-white p-3 rounded border border-purple-100 italic">
                   "{billResult.suggestedFollowupMessage}"
                 </p>
-                <p className="text-[10px] text-purple-600 font-semibold pt-1">Pushed to Human Approval Queue for store owner review.</p>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+              <Link href="/admin/dashboard" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-1">
+                View Admin Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
               <button
                 onClick={() => { setBillResult(null); setItems([]); }}
                 className="px-6 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md"
               >
-                Create Another Bill
+                Start New Bill
               </button>
             </div>
           </div>
         ) : (
           /* Interactive Billing Desk Form */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Customer Info & Capture Desk */}
+            {/* Left: Customer & Capture Desk */}
             <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-6">
               <h2 className="font-serif text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">1. Customer Information</h2>
 
@@ -259,7 +286,7 @@ export default function AdminBillingPage() {
               </div>
             </div>
 
-            {/* Right: Bill Items Summary & Total */}
+            {/* Right: Bill Summary */}
             <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 flex flex-col justify-between">
               <div>
                 <h2 className="font-serif text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">Captured Invoice Items ({items.length})</h2>
@@ -290,7 +317,7 @@ export default function AdminBillingPage() {
                   disabled={isPending || items.length === 0}
                   className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-lg disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                 >
-                  {isPending ? 'Generating Bill & PDF...' : 'GENERATE BILL & PDF'} <ArrowRight className="w-4 h-4" />
+                  {isPending ? 'Executing Cascade...' : 'GENERATE BILL & EXECUTE CASCADE'} <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

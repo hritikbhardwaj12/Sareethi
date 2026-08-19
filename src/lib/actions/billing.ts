@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { tool_create_bill, tool_generate_bill_pdf, tool_create_order, tool_update_inventory, tool_create_followup, tool_write_audit_log } from '@/lib/ai/tools';
 
 export interface BillItemPayload {
   product_id?: string;
@@ -28,7 +29,6 @@ export interface CreateBillResult {
 }
 
 export async function matchProductPhotoAction(photoUrl: string) {
-  // Simulated AI Visual Product Image Match
   return {
     matchedProductId: 'SAR-00001',
     matchedProductName: 'Pink Pochampally Ikkat Chiffon Saree With Unstitched Blouse Piece',
@@ -37,17 +37,14 @@ export async function matchProductPhotoAction(photoUrl: string) {
   };
 }
 
-export async function createBillAction(payload: CreateBillPayload): Promise<CreateBillResult> {
+export async function executeEndToEndBillingCascadeAction(payload: CreateBillPayload): Promise<CreateBillResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const billNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
   const customerId = `CUST-${Math.floor(100 + Math.random() * 900)}`;
-
   const totalAmount = payload.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
 
-  // 1. Create or Update Customer Record
+  // Step 1: Customer Record
   await supabase.from('customers').upsert({
     id: customerId,
     name: payload.customer_name,
@@ -58,19 +55,14 @@ export async function createBillAction(payload: CreateBillPayload): Promise<Crea
     last_purchase_date: new Date().toISOString(),
   });
 
-  // 2. Create Bill Record
-  await supabase.from('bills').insert({
-    bill_number: billNumber,
-    customer_id: customerId,
-    total_amount: totalAmount,
-    tax_amount: Math.round(totalAmount * 0.05),
-    pdf_url: `/bills/${billNumber}.pdf`,
-  });
+  // Step 2: Bill Creation via Controlled Tool Layer
+  const billRes = await tool_create_bill({ customer_id: customerId, total_amount: totalAmount });
+  const pdfRes = await tool_generate_bill_pdf({ bill_number: billRes.billNumber });
 
-  // 3. Create Bill Items
+  // Step 3: Insert Bill Items & Decrement Inventory via Controlled Tools
   for (const item of payload.items) {
     await supabase.from('bill_items').insert({
-      bill_number: billNumber,
+      bill_number: billRes.billNumber,
       product_id: item.product_id || 'SAR-00001',
       product_name: item.product_name,
       captured_image_url: item.captured_image_url,
@@ -79,78 +71,61 @@ export async function createBillAction(payload: CreateBillPayload): Promise<Crea
       subtotal: item.unit_price * item.quantity,
     });
 
-    // Decrement stock inventory
     if (item.product_id) {
-      const { data: inv } = await supabase
-        .from('inventory')
-        .select('quantity')
-        .eq('product_id', item.product_id)
-        .single();
-      
-      const currentQty = inv?.quantity || 10;
-      await supabase
-        .from('inventory')
-        .update({ quantity: Math.max(0, currentQty - item.quantity) })
-        .eq('product_id', item.product_id);
+      await tool_update_inventory({
+        product_id: item.product_id,
+        quantity_change: -item.quantity,
+        reason: `Physical Store Sale ${billRes.billNumber}`,
+      });
     }
   }
 
-  // 4. Create Order Record
-  await supabase.from('orders').insert({
-    id: orderId,
-    bill_number: billNumber,
+  // Step 4: Create Order Record via Controlled Tool Layer
+  const orderRes = await tool_create_order({
     customer_id: customerId,
-    status: 'CONFIRMED',
     total_price: totalAmount,
+    bill_number: billRes.billNumber,
   });
 
-  // 5. Evaluate AI Customer Follow-Up Opportunity
+  // Step 5: Evaluate AI Follow-up Opportunity via Controlled Tool Layer
   let followupGenerated = false;
   let suggestedFollowupMessage;
 
   if (payload.items.length >= 2 || totalAmount >= 3000) {
     followupGenerated = true;
-    suggestedFollowupMessage = `Hi ${payload.customer_name}, thank you for your recent purchase at Sareethi! We have saved your preference for festive sarees and suit sets. Look out for our upcoming new collection!`;
+    suggestedFollowupMessage = `Hi ${payload.customer_name}, thank you for your purchase at Sareethi! We noticed you love festive sarees and suits. Keep an eye out for our new collection arriving next week!`;
 
-    const approvalId = `APPR-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    await supabase.from('approvals').insert({
-      id: approvalId,
-      type: 'FOLLOWUP',
-      title: `Customer Re-engagement Suggested: ${payload.customer_name}`,
-      payload_json: {
-        customer_id: customerId,
-        customer_name: payload.customer_name,
-        suggested_message: suggestedFollowupMessage,
-        recent_total: totalAmount,
-      },
-      risk_level: 'LOW',
-      status: 'PENDING',
+    await tool_create_followup({
+      customer_id: customerId,
+      customer_name: payload.customer_name,
+      suggested_message: suggestedFollowupMessage,
     });
   }
 
-  // 6. Audit Log Transaction
-  await supabase.from('audit_logs').insert({
-    action: 'BILL_GENERATED',
+  // Step 6: Write Immutable Audit Log
+  await tool_write_audit_log({
+    action: 'END_TO_END_BILLING_CASCADE_COMPLETED',
     actor: user ? 'STORE_OWNER' : 'STORE_OWNER',
-    details_json: {
-      bill_number: billNumber,
-      order_id: orderId,
+    details: {
+      bill_number: billRes.billNumber,
+      order_id: orderRes.orderId,
       customer_name: payload.customer_name,
       total_amount: totalAmount,
       items_count: payload.items.length,
+      ai_followup_generated: followupGenerated,
     },
   });
 
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/store');
+  revalidatePath('/admin/approvals');
 
   return {
-    billNumber,
-    orderId,
+    billNumber: billRes.billNumber,
+    orderId: orderRes.orderId,
     customerId,
     totalAmount,
-    pdfUrl: `/bills/${billNumber}.pdf`,
+    pdfUrl: pdfRes.pdf_url,
     followupGenerated,
     suggestedFollowupMessage,
   };
