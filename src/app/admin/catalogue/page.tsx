@@ -31,9 +31,9 @@ export default function AdminCataloguePage() {
           const res = await processCatalogueUploadAction(file.name, file.type, file.size, base64);
           setResult(res);
           setStep('COMPLETED');
-        } catch (err) {
+        } catch (err: any) {
           console.error('Upload failed', err);
-          alert('Failed to process catalogue file');
+          alert(`Failed to process catalogue file: ${err?.message || 'Server error'}`);
           setStep('IDLE');
         }
       });

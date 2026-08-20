@@ -198,52 +198,58 @@ Return JSON array in this schema:
 
   // 4. Auto-publish high-confidence products & send low-confidence to Approval Queue
   for (const item of extractedProducts) {
-    if (item.status === 'NEEDS_REVIEW') {
-      await supabase.from('approvals').insert({
-        id: `APPR-${Math.floor(1000 + Math.random() * 9000)}`,
-        workflow_id: workflowId,
-        type: 'CLASSIFICATION_REVIEW',
-        title: `Uncertain Catalogue Product: ${item.name}`,
-        payload_json: item,
-        risk_level: 'MEDIUM',
-        status: 'PENDING',
-      });
-    } else {
-      // Create Product in DB
-      await supabase.from('products').insert({
-        id: item.suggestedSku,
-        name: item.name,
-        category: item.category,
-        selling_price: item.finalPrice,
-        cost_price: Math.round(item.finalPrice * 0.55),
-        original_price: Math.round(item.finalPrice * 2.2),
-        discount_percent: 55,
-        status: 'ACTIVE',
-      });
-
-      await supabase.from('product_attributes').insert({
-        product_id: item.suggestedSku,
-        color: item.attributes.color,
-        fabric: item.attributes.fabric,
-        style: item.attributes.style,
-        occasion: item.attributes.occasion,
-        blouse_details: item.attributes.blouse,
-      });
-
-      await supabase.from('inventory').insert({
-        product_id: item.suggestedSku,
-        quantity: 10,
-        min_alert_threshold: 2,
-      });
-
-      for (let i = 0; i < item.images.length; i++) {
-        await supabase.from('product_images').insert({
-          product_id: item.suggestedSku,
-          image_url: item.images[i],
-          is_primary: i === 0,
-          display_order: i + 1,
+    try {
+      if (item.status === 'NEEDS_REVIEW') {
+        await supabase.from('approvals').insert({
+          id: `APPR-${Math.floor(1000 + Math.random() * 9000)}`,
+          workflow_id: workflowId,
+          type: 'CLASSIFICATION_REVIEW',
+          title: `Uncertain Catalogue Product: ${item.name}`,
+          payload_json: item,
+          risk_level: 'MEDIUM',
+          status: 'PENDING',
         });
+      } else {
+        // Create Product in DB
+        const { error: prodErr } = await supabase.from('products').insert({
+          id: item.suggestedSku,
+          name: item.name,
+          category: item.category,
+          selling_price: item.finalPrice,
+          cost_price: Math.round(item.finalPrice * 0.55),
+          original_price: Math.round(item.finalPrice * 2.2),
+          discount_percent: 55,
+          status: 'ACTIVE',
+        });
+
+        if (prodErr) console.error('Product insert error:', prodErr);
+
+        await supabase.from('product_attributes').insert({
+          product_id: item.suggestedSku,
+          color: item.attributes.color,
+          fabric: item.attributes.fabric,
+          style: item.attributes.style,
+          occasion: item.attributes.occasion,
+          blouse_details: item.attributes.blouse,
+        });
+
+        await supabase.from('inventory').insert({
+          product_id: item.suggestedSku,
+          quantity: 10,
+          min_alert_threshold: 2,
+        });
+
+        for (let i = 0; i < item.images.length; i++) {
+          await supabase.from('product_images').insert({
+            product_id: item.suggestedSku,
+            image_url: item.images[i],
+            is_primary: i === 0,
+            display_order: i + 1,
+          });
+        }
       }
+    } catch (dbErr) {
+      console.error('Error inserting candidate into DB:', dbErr);
     }
   }
 
