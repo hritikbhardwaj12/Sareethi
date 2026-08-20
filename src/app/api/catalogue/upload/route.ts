@@ -7,9 +7,13 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    const clientExtractedText = (formData.get('extractedText') as string) || '';
+    const fileName = (formData.get('fileName') as string) || file?.name || 'catalogue.pdf';
+    const fileType = (formData.get('fileType') as string) || file?.type || 'application/pdf';
+    const fileSize = parseInt((formData.get('fileSize') as string) || '0', 10);
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!file && !clientExtractedText && !fileName) {
+      return NextResponse.json({ error: 'No file metadata or text provided' }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -23,7 +27,7 @@ export async function POST(req: NextRequest) {
       workflow_type: 'CATALOGUE_INGESTION',
       current_step: 'PROCESSING',
       status: 'RUNNING',
-      payload_json: { file_name: file.name, file_type: file.type, file_size: file.size },
+      payload_json: { file_name: fileName, file_type: fileType, file_size: fileSize },
     });
 
     // 2. Audit Log Start
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
       workflow_id: workflowId,
       action: 'CATALOGUE_INGESTION_STARTED',
       actor: 'STORE_OWNER',
-      details_json: { file_name: file.name, file_type: file.type },
+      details_json: { file_name: fileName, file_type: fileType },
     });
 
     let extractedProducts: any[] = [];
