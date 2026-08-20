@@ -29,6 +29,10 @@ export function ProfileEditForm({ initialPhone, initialAddress }: ProfileEditFor
     try {
       await updateProfileDetails(phone, address);
       setIsEditing(false);
+      
+      // Force Next.js dynamic routing to refresh profile page data
+      const { useRouter } = await import('next/navigation');
+      window.location.reload();
     } catch (err) {
       console.error(err);
       alert('Failed to update details');
