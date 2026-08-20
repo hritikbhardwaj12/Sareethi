@@ -9,9 +9,9 @@ import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { items, totalAmount, clearCart } = useCart();
-  const [name, setName] = useState('Priya Sharma');
-  const [phone, setPhone] = useState('9876543210');
-  const [address, setAddress] = useState('123 Green Park Extension, New Delhi');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
 
