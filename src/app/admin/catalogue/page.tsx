@@ -35,7 +35,12 @@ export default function AdminCataloguePage() {
         }
 
         const formData = new FormData();
-        formData.append('file', file);
+        
+        // Only append raw file if under 4MB limit (Vercel payload safety)
+        if (file.size <= 4 * 1024 * 1024) {
+          formData.append('file', file);
+        }
+        
         formData.append('fileName', file.name);
         formData.append('fileType', file.type);
         formData.append('fileSize', file.size.toString());
