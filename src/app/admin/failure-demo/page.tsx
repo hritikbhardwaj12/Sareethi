@@ -3,17 +3,24 @@
 import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
-import { executeIntentionalFailureDemoAction, IntentionalFailureResult } from '@/lib/actions/intentional-failure';
-import { AlertOctagon, RefreshCcw, ShieldCheck, ArrowRight, CheckCircle2, FileText, XCircle } from 'lucide-react';
+import { executeCatalogueFailureDemoAction, executeDeliveryApiFailureDemoAction, IntentionalFailureResult } from '@/lib/actions/intentional-failure';
+import { AlertOctagon, RefreshCcw, ShieldCheck, ArrowRight, CheckCircle2, FileText, XCircle, Truck, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminFailureDemoPage() {
   const [isPending, startTransition] = useTransition();
   const [demoResult, setDemoResult] = useState<IntentionalFailureResult | null>(null);
 
-  const handleRunDemo = () => {
+  const handleCatalogueFailure = () => {
     startTransition(async () => {
-      const res = await executeIntentionalFailureDemoAction();
+      const res = await executeCatalogueFailureDemoAction();
+      setDemoResult(res);
+    });
+  };
+
+  const handleDeliveryFailure = () => {
+    startTransition(async () => {
+      const res = await executeDeliveryApiFailureDemoAction();
       setDemoResult(res);
     });
   };
@@ -31,47 +38,25 @@ export default function AdminFailureDemoPage() {
               <h1 className="font-serif text-2xl font-bold">Intentional Failure & Safety Demonstration</h1>
             </div>
             <p className="text-xs text-purple-200 mt-1">
-              Demonstrates Sareethi's error handling protocol: Attempt 1 $\rightarrow$ Failure $\rightarrow$ Retry 1 $\rightarrow$ Retry 2 $\rightarrow$ Safe Pause $\rightarrow$ Audit Log $\rightarrow$ Human Escalation Ticket. Zero hallucination.
+              Demonstrates Sareethi saying: <span className="font-bold text-amber-300">"I cannot safely complete this workflow."</span> — Halting gracefully without hallucinating products or issuing unauthorized refunds.
             </p>
           </div>
 
-          <button
-            onClick={handleRunDemo}
-            disabled={isPending}
-            className="px-5 py-2.5 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 shadow-md flex items-center gap-1.5 shrink-0 disabled:opacity-50"
-          >
-            <RefreshCcw className="w-4 h-4" /> {isPending ? 'Simulating Failure...' : 'TRIGGER FAILURE SCENARIO'}
-          </button>
-        </div>
-
-        {/* Eko Requirement Safety Checklist Card */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 text-xs">
-          <h2 className="font-serif text-base font-bold text-gray-900 border-b border-gray-100 pb-2">Eko Assignment Safety Principles Verified</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>Validation</strong>: Zod schemas on all tool contracts</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>Retry Policy</strong>: Max 2 retries before safe pause</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>Idempotency</strong>: Double-click protection on billing</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>Audit Ledger</strong>: Immutable system event logging</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>No Hallucination</strong>: Zero fake data on failure</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span><strong>Human Only</strong>: Refunds strictly require owner</span>
-            </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={handleCatalogueFailure}
+              disabled={isPending}
+              className="px-4 py-2.5 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 shadow-md flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <FileText className="w-4 h-4" /> 1. Catalogue Failure
+            </button>
+            <button
+              onClick={handleDeliveryFailure}
+              disabled={isPending}
+              className="px-4 py-2.5 bg-amber-600 text-white font-bold text-xs rounded-xl hover:bg-amber-700 shadow-md flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Truck className="w-4 h-4" /> 2. Delivery API Timeout
+            </button>
           </div>
         </div>
 
@@ -83,12 +68,21 @@ export default function AdminFailureDemoPage() {
                 <XCircle className="w-8 h-8 text-rose-600" />
                 <div>
                   <h3 className="font-serif text-xl font-bold text-gray-900">Workflow Halted & Escalated Safely</h3>
-                  <p className="text-xs text-gray-500">Workflow ID: <span className="font-mono font-bold text-purple-950">{demoResult.workflowId}</span> • Target: {demoResult.filePage}</p>
+                  <p className="text-xs text-gray-500">Workflow: <span className="font-mono font-bold text-purple-950">{demoResult.workflowId}</span> • Target: {demoResult.targetContext}</p>
                 </div>
               </div>
               <span className="bg-rose-100 text-rose-800 font-bold text-xs px-3 py-1 rounded-full">
                 State: {demoResult.finalState}
               </span>
+            </div>
+
+            {/* Sareethi AI Explicit Statement Banner */}
+            <div className="p-4 bg-purple-950 text-white rounded-xl space-y-1">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">SAREETHI WORKER DECLARATION</span>
+              <p className="font-serif text-lg font-bold text-amber-300">"{demoResult.aiStatement}"</p>
+              <p className="text-xs text-purple-200">
+                Reason: Operational evidence is ambiguous or integration timed out. Stopping cleanly without inventing attributes or taking unauthorized monetary actions.
+              </p>
             </div>
 
             {/* Trajectory Retry Logs */}
@@ -112,8 +106,8 @@ export default function AdminFailureDemoPage() {
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Verification Guarantees Checked:
               </p>
               <p>✓ Product record created: <span className="font-bold">NO (0 created)</span></p>
-              <p>✓ Inventory stock changed: <span className="font-bold">NO (0 modified)</span></p>
-              <p>✓ Audit log written: <span className="font-bold">YES</span></p>
+              <p>✓ Refund issued: <span className="font-bold">NO (Strict Level 3 boundary enforced)</span></p>
+              <p>✓ System audit log written: <span className="font-bold">YES</span></p>
               <p>✓ Ticket created in Approval Queue: <span className="font-mono font-bold">{demoResult.approvalId}</span></p>
             </div>
 
