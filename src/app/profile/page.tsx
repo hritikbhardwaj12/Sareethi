@@ -2,9 +2,17 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { User, LogOut, Package, MapPin, Phone } from 'lucide-react';
-import { signOut } from '@/lib/auth/actions';
+import { signOut, getCurrentProfile } from '@/lib/auth/actions';
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const profileData = await getCurrentProfile();
+  const user = profileData?.user;
+  const profile = profileData?.profile;
+
+  const email = user?.email || 'Customer Profile';
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || profile?.full_name || email.split('@')[0];
+  const initial = (name[0] || 'U').toUpperCase();
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Header />
@@ -12,12 +20,16 @@ export default function ProfilePage() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <div className="bg-white p-8 rounded-2xl shadow-xs border border-gray-100 space-y-6">
           <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-            <div className="w-16 h-16 bg-purple-950 text-white rounded-full flex items-center justify-center text-xl font-bold font-serif">
-              P
+            <div className="w-16 h-16 bg-purple-950 text-white rounded-full flex items-center justify-center text-xl font-bold font-serif overflow-hidden">
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                initial
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Priya Sharma</h1>
-              <p className="text-xs text-gray-500">priya.sharma@example.com</p>
+              <h1 className="text-xl font-bold text-gray-900">{name}</h1>
+              <p className="text-xs text-gray-500">{email}</p>
               <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
                 Verified Customer Profile
               </span>
@@ -30,7 +42,7 @@ export default function ProfilePage() {
                 <Phone className="w-4 h-4 text-purple-950" />
                 <div>
                   <p className="font-semibold text-gray-900">Contact Number</p>
-                  <p className="text-gray-500">+91 98765 43210</p>
+                  <p className="text-gray-500">{profile?.phone || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -40,7 +52,7 @@ export default function ProfilePage() {
                 <MapPin className="w-4 h-4 text-purple-950" />
                 <div>
                   <p className="font-semibold text-gray-900">Primary Delivery Address</p>
-                  <p className="text-gray-500">123 Green Park Extension, New Delhi 110016</p>
+                  <p className="text-gray-500">{profile?.shipping_address || 'No address saved yet'}</p>
                 </div>
               </div>
             </div>
@@ -50,7 +62,7 @@ export default function ProfilePage() {
                 <Package className="w-4 h-4 text-purple-950" />
                 <div>
                   <p className="font-semibold text-gray-900">Order History</p>
-                  <p className="text-gray-500">2 Recorded Orders</p>
+                  <p className="text-gray-500">View your orders</p>
                 </div>
               </div>
             </Link>
@@ -71,3 +83,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
