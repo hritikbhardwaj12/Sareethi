@@ -41,7 +41,7 @@ export async function analyzeCustomerBehaviorAction(customerId: string): Promise
 
   return {
     customerId,
-    customerName: customer?.name || 'Priya Sharma',
+    customerName: customer?.name || 'Customer',
     phone: customer?.phone || '9876543210',
     totalOrders,
     totalSpent,
