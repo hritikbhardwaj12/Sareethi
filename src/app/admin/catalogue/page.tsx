@@ -23,22 +23,30 @@ export default function AdminCataloguePage() {
     if (!file) return;
     setStep('PROCESSING');
     
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      startTransition(async () => {
-        try {
-          const res = await processCatalogueUploadAction(file.name, file.type, file.size, base64);
-          setResult(res);
-          setStep('COMPLETED');
-        } catch (err: any) {
-          console.error('Upload failed', err);
-          alert(`Failed to process catalogue file: ${err?.message || 'Server error'}`);
-          setStep('IDLE');
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/catalogue/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to process catalogue file');
         }
-      });
-    };
-    reader.readAsDataURL(file);
+
+        setResult(data);
+        setStep('COMPLETED');
+      } catch (err: any) {
+        console.error('Upload failed', err);
+        alert(`Failed to process catalogue file: ${err?.message || 'Server error'}`);
+        setStep('IDLE');
+      }
+    });
   };
 
   return (
