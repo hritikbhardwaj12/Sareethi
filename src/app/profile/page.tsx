@@ -6,8 +6,14 @@ import { signOut, getCurrentProfile } from '@/lib/auth/actions';
 
 export default async function ProfilePage() {
   const profileData = await getCurrentProfile();
-  const user = profileData?.user;
-  const profile = profileData?.profile;
+
+  if (!profileData?.user) {
+    const { redirect } = await import('next/navigation');
+    redirect('/login');
+  }
+
+  const user = profileData.user;
+  const profile = profileData.profile;
 
   const email = user?.email || 'Customer Profile';
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || profile?.full_name || email.split('@')[0];
