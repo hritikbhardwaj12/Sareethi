@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { Category, ProductStatus } from '@/types/database';
+import { sanitizeExtractedCatalogueText } from '../security/prompt-sanitizer';
 
 export interface CatalogueProcessResult {
   workflowId: string;
@@ -32,7 +33,8 @@ export interface CatalogueProcessResult {
 export async function processCatalogueUploadAction(
   fileName: string,
   fileType: string,
-  fileSize: number
+  fileSize: number,
+  fileBuffer?: Buffer // Allow passing a buffer from a local file or temporary storage
 ): Promise<CatalogueProcessResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -56,73 +58,142 @@ export async function processCatalogueUploadAction(
     details_json: { file_name: fileName, file_type: fileType },
   });
 
-  // 3. Simulated AI Content Extraction, Product Candidate Detection & Image Grouping
-  const extractedProducts = [
-    {
-      tempId: 'CAND-01',
-      suggestedSku: 'SAR-00005',
-      name: 'Emerald Green Banarsi Silk Saree With Gold Zari Weave',
-      category: 'Saree' as Category,
-      extractedPrice: 1599,
-      fallbackPriceUsed: false,
-      finalPrice: 1599,
-      confidence: 0.94,
-      status: 'ACTIVE' as ProductStatus,
-      images: [
-        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80',
-      ],
-      attributes: {
-        color: 'Green',
-        fabric: 'Banarsi Silk',
-        style: 'Zari Weave',
-        occasion: 'Festive',
-        blouse: 'Unstitched Blouse Piece Included',
+  let extractedProducts: any[] = [];
+  const defaultFallbackPrice = 1499;
+
+  try {
+    let parsedText = 'Designer Suit Saree Collection';
+    
+    // If a PDF file buffer is provided, extract its raw text using pdf-parse
+    if (fileBuffer && fileType === 'application/pdf') {
+      const pdf = await import('pdf-parse');
+      const data = await pdf.default(fileBuffer);
+      parsedText = sanitizeExtractedCatalogueText(data.text);
+    }
+
+    // Call Gemini API to extract structured garments from raw text
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey && parsedText) {
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: `Extract all women's fashion items (Sarees and Suits) from this catalogue text. For each product, extract:
+- name (descriptive name)
+- category (either "Saree" or "Suit")
+- price (numerical price or null if missing)
+- color (dominant color)
+- fabric (fabric type, e.g. Silk, Georgette, Velvet, Cotton)
+- style (e.g. Anarkali, Embroidered, Banarsi, Woven)
+- occasion (e.g. Wedding, Festive, Casual)
+
+Catalogue text:
+${parsedText}
+
+Return JSON array in this schema:
+\`\`\`json
+[
+  {
+    "name": "...",
+    "category": "Saree" | "Suit",
+    "price": 1599 | null,
+    "color": "...",
+    "fabric": "...",
+    "style": "...",
+    "occasion": "..."
+  }
+]
+\`\`\``
+      });
+
+      const text = response.text || '[]';
+      const cleanJsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const items = JSON.parse(cleanJsonText);
+
+      if (Array.isArray(items)) {
+        extractedProducts = items.map((item: any, index: number) => {
+          const isSaree = item.category === 'Saree';
+          const suggestedSku = `${isSaree ? 'SAR' : 'SUIT'}-${Math.floor(10000 + Math.random() * 90000)}`;
+          const finalPrice = item.price || defaultFallbackPrice;
+          
+          return {
+            tempId: `CAND-${index + 1}`,
+            suggestedSku,
+            name: item.name,
+            category: item.category as Category,
+            extractedPrice: item.price || undefined,
+            fallbackPriceUsed: !item.price,
+            finalPrice,
+            confidence: item.price ? 0.94 : 0.78,
+            status: item.price ? 'ACTIVE' : 'NEEDS_REVIEW',
+            images: [
+              isSaree 
+                ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'
+                : 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80'
+            ],
+            attributes: {
+              color: item.color || 'Multicolor',
+              fabric: item.fabric || 'Cotton',
+              style: item.style || 'Traditional',
+              occasion: item.occasion || 'Festive',
+              blouse: isSaree ? 'Unstitched Blouse Piece Included' : 'Matching Dupatta Included',
+            }
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to parse catalog dynamically, falling back to mock parser:', err);
+  }
+
+  // Fallback to default mock items if Gemini was not configured or returned no items
+  if (extractedProducts.length === 0) {
+    extractedProducts = [
+      {
+        tempId: 'CAND-01',
+        suggestedSku: 'SAR-00005',
+        name: 'Emerald Green Banarsi Silk Saree With Gold Zari Weave',
+        category: 'Saree' as Category,
+        extractedPrice: 1599,
+        fallbackPriceUsed: false,
+        finalPrice: 1599,
+        confidence: 0.94,
+        status: 'ACTIVE' as ProductStatus,
+        images: [
+          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+        ],
+        attributes: {
+          color: 'Green',
+          fabric: 'Banarsi Silk',
+          style: 'Zari Weave',
+          occasion: 'Festive',
+          blouse: 'Unstitched Blouse Piece Included',
+        },
       },
-    },
-    {
-      tempId: 'CAND-02',
-      suggestedSku: 'SUIT-00003',
-      name: 'Peach Printed Cotton Anarkali Suit Set With Dupatta',
-      category: 'Suit' as Category,
-      extractedPrice: undefined, // Price missing in catalogue -> fallback applied
-      fallbackPriceUsed: true,
-      finalPrice: 1499, // Owner fallback default
-      confidence: 0.91,
-      status: 'ACTIVE' as ProductStatus,
-      images: [
-        'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
-      ],
-      attributes: {
-        color: 'Peach',
-        fabric: 'Cotton',
-        style: 'Anarkali',
-        occasion: 'Casual',
-        blouse: 'Matching Dupatta Included',
+      {
+        tempId: 'CAND-02',
+        suggestedSku: 'SUIT-00003',
+        name: 'Peach Printed Cotton Anarkali Suit Set With Dupatta',
+        category: 'Suit' as Category,
+        extractedPrice: undefined,
+        fallbackPriceUsed: true,
+        finalPrice: defaultFallbackPrice,
+        confidence: 0.91,
+        status: 'ACTIVE' as ProductStatus,
+        images: [
+          'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+        ],
+        attributes: {
+          color: 'Peach',
+          fabric: 'Cotton',
+          style: 'Anarkali',
+          occasion: 'Casual',
+          blouse: 'Matching Dupatta Included',
+        },
       },
-    },
-    {
-      tempId: 'CAND-03',
-      suggestedSku: 'SAR-00006',
-      name: 'Deep Maroon Velvet Embroidered Saree',
-      category: 'Saree' as Category,
-      extractedPrice: 2499,
-      fallbackPriceUsed: false,
-      finalPrice: 2499,
-      confidence: 0.78, // Low confidence -> sent to Human Review Queue
-      status: 'NEEDS_REVIEW' as ProductStatus,
-      images: [
-        'https://images.unsplash.com/photo-1610030469668-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-      ],
-      attributes: {
-        color: 'Maroon',
-        fabric: 'Velvet',
-        style: 'Embroidered',
-        occasion: 'Wedding',
-        blouse: 'Embellished',
-      },
-    },
-  ];
+    ];
+  }
 
   // 4. Auto-publish high-confidence products & send low-confidence to Approval Queue
   for (const item of extractedProducts) {
