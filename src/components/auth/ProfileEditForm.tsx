@@ -17,6 +17,14 @@ export function ProfileEditForm({ initialPhone, initialAddress }: ProfileEditFor
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Indian Phone Standard validation (optional country code + 10 digits)
+    const phoneRegex = /^(?:\+91[\-\s]?)?[6789]\d{9}$/;
+    if (phone && !phoneRegex.test(phone.replace(/[\s\-]/g, ''))) {
+      alert('Please enter a valid 10-digit mobile number (e.g. 9876543210 or +919876543210).');
+      return;
+    }
+
     setLoading(true);
     try {
       await updateProfileDetails(phone, address);
