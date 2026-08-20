@@ -66,8 +66,8 @@ export async function processCatalogueUploadAction(
     
     // If a PDF file buffer is provided, extract its raw text using pdf-parse
     if (fileBuffer && fileType === 'application/pdf') {
-      const pdf = await import('pdf-parse');
-      const data = await pdf.default(fileBuffer);
+      const pdf = require('pdf-parse');
+      const data = await pdf(fileBuffer);
       parsedText = sanitizeExtractedCatalogueText(data.text);
     }
 
