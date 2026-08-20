@@ -6,17 +6,43 @@ import { signOut, getCurrentProfile } from '@/lib/auth/actions';
 
 export default async function ProfilePage() {
   const profileData = await getCurrentProfile();
+  const user = profileData?.user;
+  const profile = profileData?.profile;
 
-  if (!profileData?.user) {
-    const { redirect } = await import('next/navigation');
-    redirect('/login');
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+        <Header />
+
+        <main className="flex-1 max-w-md mx-auto w-full px-4 py-16 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-6 w-full">
+            <div className="w-16 h-16 bg-purple-100 text-purple-950 rounded-full flex items-center justify-center mx-auto">
+              <User className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl font-serif font-bold text-gray-900">Your Account</h1>
+              <p className="text-xs text-gray-500">
+                Please log in to view your account details, track orders, and manage shipping addresses.
+              </p>
+            </div>
+
+            <Link
+              href="/login"
+              className="w-full py-3 px-4 bg-purple-950 text-white font-medium text-xs rounded-xl hover:bg-purple-900 transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              Sign In to Your Account
+            </Link>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
   }
 
-  const user = profileData.user;
-  const profile = profileData.profile;
-
-  const email = user?.email || 'Customer Profile';
-  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || profile?.full_name || email.split('@')[0];
+  const email = user.email || 'Customer Profile';
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || profile?.full_name || email.split('@')[0];
   const initial = (name[0] || 'U').toUpperCase();
 
   return (
