@@ -22,13 +22,23 @@ export default function AdminCataloguePage() {
   const handleUpload = () => {
     if (!file) return;
     setStep('PROCESSING');
-    startTransition(async () => {
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
-      const res = await processCatalogueUploadAction(file.name, file.type, file.size, base64);
-      setResult(res);
-      setStep('COMPLETED');
-    });
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      startTransition(async () => {
+        try {
+          const res = await processCatalogueUploadAction(file.name, file.type, file.size, base64);
+          setResult(res);
+          setStep('COMPLETED');
+        } catch (err) {
+          console.error('Upload failed', err);
+          alert('Failed to process catalogue file');
+          setStep('IDLE');
+        }
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
