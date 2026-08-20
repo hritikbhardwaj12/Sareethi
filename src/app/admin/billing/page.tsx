@@ -11,8 +11,8 @@ export default function AdminBillingPage() {
   const [isPending, startTransition] = useTransition();
 
   // Customer Details
-  const [customerName, setCustomerName] = useState('Priya Sharma');
-  const [customerPhone, setCustomerPhone] = useState('9876543210');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
 
   // Captured Items List
   const [items, setItems] = useState<BillItemPayload[]>([
