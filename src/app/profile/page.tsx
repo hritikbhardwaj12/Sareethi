@@ -4,6 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 import { User, LogOut, Package, MapPin, Phone } from 'lucide-react';
 import { signOut, getCurrentProfile } from '@/lib/auth/actions';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function ProfilePage() {
   const profileData = await getCurrentProfile();
   const user = profileData?.user;
