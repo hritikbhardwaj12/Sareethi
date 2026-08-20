@@ -37,19 +37,27 @@ export async function POST(req: NextRequest) {
     let extractedProducts: any[] = [];
     const defaultFallbackPrice = 1499;
 
-    let parsedText = '';
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const clientExtractedText = (formData.get('extractedText') as string) || '';
+    const fileName = (formData.get('fileName') as string) || file?.name || 'catalogue.pdf';
+    const fileType = (formData.get('fileType') as string) || file?.type || 'application/pdf';
 
-    // Extract raw text from PDF using pdf-parse
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    let parsedText = '';
+    
+    // Extract raw text from PDF using pdf-parse if buffer exists
+    if (file) {
       try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
         const pdf = require('pdf-parse');
         const data = await pdf(buffer);
         parsedText = sanitizeExtractedCatalogueText(data.text);
       } catch (e) {
-        console.error('PDF parsing error:', e);
+        console.error('Server PDF parsing error, using client fallback text:', e);
       }
+    }
+
+    if (!parsedText && clientExtractedText) {
+      parsedText = sanitizeExtractedCatalogueText(clientExtractedText);
     }
 
     // Call Gemini API to extract structured items

@@ -25,8 +25,21 @@ export default function AdminCataloguePage() {
     
     startTransition(async () => {
       try {
+        let extractedText = '';
+
+        // Standard text reading if text/plain or small file, or pass raw text
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          // Use client side FileReader text extraction
+          const text = await file.text();
+          extractedText = text;
+        }
+
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('fileName', file.name);
+        formData.append('fileType', file.type);
+        formData.append('fileSize', file.size.toString());
+        formData.append('extractedText', extractedText.slice(0, 50000)); // Limit to safe payload
 
         const res = await fetch('/api/catalogue/upload', {
           method: 'POST',
