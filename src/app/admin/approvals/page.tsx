@@ -14,7 +14,7 @@ const INITIAL_APPROVALS = [
     risk_level: 'LOW',
     status: 'PENDING',
     payload: {
-      customer_name: 'Priya Sharma',
+      customer_name: ' Sharma',
       days_inactive: 42,
       suggested_message: 'Hi Priya, we noticed you enjoyed our festive saree collection! We have added new Banarsi silk arrivals that you might love.',
     },

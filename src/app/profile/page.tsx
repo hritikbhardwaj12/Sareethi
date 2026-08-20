@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { User, LogOut, Package, MapPin, Phone } from 'lucide-react';
+import { User, LogOut, Package } from 'lucide-react';
 import { signOut, getCurrentProfile } from '@/lib/auth/actions';
+import { ProfileEditForm } from '@/components/auth/ProfileEditForm';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -71,28 +72,13 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          <div className="space-y-4 text-xs">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-purple-950" />
-                <div>
-                  <p className="font-semibold text-gray-900">Contact Number</p>
-                  <p className="text-gray-500">{profile?.phone || 'Not provided'}</p>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-4">
+            <ProfileEditForm 
+              initialPhone={profile?.phone || ''} 
+              initialAddress={profile?.shipping_address || ''} 
+            />
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-4 h-4 text-purple-950" />
-                <div>
-                  <p className="font-semibold text-gray-900">Primary Delivery Address</p>
-                  <p className="text-gray-500">{profile?.shipping_address || 'No address saved yet'}</p>
-                </div>
-              </div>
-            </div>
-
-            <Link href="/orders" className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <Link href="/orders" className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-xs">
               <div className="flex items-center gap-3">
                 <Package className="w-4 h-4 text-purple-950" />
                 <div>
@@ -103,7 +89,7 @@ export default async function ProfilePage() {
             </Link>
           </div>
 
-          <form action={signOut} className="pt-4 border-t border-gray-100">
+          <form action={signOut} className="pt-4 border-t border-gray-100 text-xs">
             <button
               type="submit"
               className="w-full py-3 bg-rose-50 text-rose-700 font-semibold text-xs rounded-xl hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
@@ -118,4 +104,5 @@ export default async function ProfilePage() {
     </div>
   );
 }
+
 

@@ -47,3 +47,27 @@ export async function getCurrentProfile() {
     isAdmin: profile?.role_id === 'OWNER',
   };
 }
+
+export async function updateProfileDetails(phone: string, shippingAddress: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      phone: phone || null,
+      shipping_address: shippingAddress || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/profile');
+}
+
