@@ -23,7 +23,9 @@ export default function AdminCataloguePage() {
     if (!file) return;
     setStep('PROCESSING');
     startTransition(async () => {
-      const res = await processCatalogueUploadAction(file.name, file.type, file.size);
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const res = await processCatalogueUploadAction(file.name, file.type, file.size, base64);
       setResult(res);
       setStep('COMPLETED');
     });

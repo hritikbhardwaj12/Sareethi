@@ -34,7 +34,7 @@ export async function processCatalogueUploadAction(
   fileName: string,
   fileType: string,
   fileSize: number,
-  fileBuffer?: Buffer // Allow passing a buffer from a local file or temporary storage
+  fileBase64?: string
 ): Promise<CatalogueProcessResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -62,12 +62,13 @@ export async function processCatalogueUploadAction(
   const defaultFallbackPrice = 1499;
 
   try {
-    let parsedText = 'Designer Suit Saree Collection';
+    let parsedText = '';
     
-    // If a PDF file buffer is provided, extract its raw text using pdf-parse
-    if (fileBuffer && fileType === 'application/pdf') {
+    // If a PDF file base64 string is provided, decode and extract text
+    if (fileBase64 && (fileType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf'))) {
       const pdf = require('pdf-parse');
-      const data = await pdf(fileBuffer);
+      const buffer = Buffer.from(fileBase64, 'base64');
+      const data = await pdf(buffer);
       parsedText = sanitizeExtractedCatalogueText(data.text);
     }
 
