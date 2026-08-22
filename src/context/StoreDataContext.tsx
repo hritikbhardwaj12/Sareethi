@@ -503,19 +503,20 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const [savedProfile, setSavedProfile] = useState<{ fullName: string; phone: string; address: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from LocalStorage on mount
+  // Load from LocalStorage & Cloud Sync on mount
   useEffect(() => {
+    let localSaved: any = null;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.products && Array.isArray(parsed.products)) setProducts(parsed.products);
-        if (parsed.orders && Array.isArray(parsed.orders)) setOrders(parsed.orders);
-        if (parsed.customers && Array.isArray(parsed.customers)) setCustomers(parsed.customers);
-        if (parsed.bills && Array.isArray(parsed.bills)) setBills(parsed.bills);
-        if (parsed.returns && Array.isArray(parsed.returns)) setReturns(parsed.returns);
-        if (parsed.approvals && Array.isArray(parsed.approvals)) setApprovals(parsed.approvals);
-        if (parsed.savedProfile) setSavedProfile(parsed.savedProfile);
+        localSaved = JSON.parse(saved);
+        if (localSaved.products && Array.isArray(localSaved.products)) setProducts(localSaved.products);
+        if (localSaved.orders && Array.isArray(localSaved.orders)) setOrders(localSaved.orders);
+        if (localSaved.customers && Array.isArray(localSaved.customers)) setCustomers(localSaved.customers);
+        if (localSaved.bills && Array.isArray(localSaved.bills)) setBills(localSaved.bills);
+        if (localSaved.returns && Array.isArray(localSaved.returns)) setReturns(localSaved.returns);
+        if (localSaved.approvals && Array.isArray(localSaved.approvals)) setApprovals(localSaved.approvals);
+        if (localSaved.savedProfile) setSavedProfile(localSaved.savedProfile);
       }
       const separateProfile = localStorage.getItem('sareethi_saved_profile');
       if (separateProfile) {
@@ -526,6 +527,65 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoaded(true);
     }
+
+    // Fetch live data from Cloud Sync API
+    const syncFromCloud = async () => {
+      try {
+        const res = await fetch('/api/sync');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.orders && Array.isArray(data.orders)) {
+            // Merge with local orders
+            setOrders((prev) => {
+              const map = new Map();
+              [...data.orders, ...prev].forEach((o) => map.set(o.id, o));
+              return Array.from(map.values());
+            });
+          }
+          if (data.customers && Array.isArray(data.customers)) {
+            setCustomers((prev) => {
+              const map = new Map();
+              [...data.customers, ...prev].forEach((c) => map.set(c.phone || c.id, c));
+              return Array.from(map.values());
+            });
+          }
+          if (data.bills && Array.isArray(data.bills)) {
+            setBills((prev) => {
+              const map = new Map();
+              [...data.bills, ...prev].forEach((b) => map.set(b.billNumber, b));
+              return Array.from(map.values());
+            });
+          }
+          if (data.returns && Array.isArray(data.returns)) {
+            setReturns((prev) => {
+              const map = new Map();
+              [...data.returns, ...prev].forEach((r) => map.set(r.id, r));
+              return Array.from(map.values());
+            });
+          }
+          if (data.approvals && Array.isArray(data.approvals)) {
+            setApprovals((prev) => {
+              const map = new Map();
+              [...data.approvals, ...prev].forEach((a) => map.set(a.id, a));
+              return Array.from(map.values());
+            });
+          }
+        }
+      } catch (err) {
+        // Safe offline fallback
+      }
+    };
+
+    syncFromCloud();
+
+    // Poll cloud sync every 4 seconds or on window focus
+    const interval = setInterval(syncFromCloud, 4000);
+    window.addEventListener('focus', syncFromCloud);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', syncFromCloud);
+    };
   }, []);
 
   const saveUserProfile = (profile: { fullName: string; phone: string; address: string }) => {
@@ -670,6 +730,18 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         return [newCustomer, ...prev];
       }
     });
+
+    // 4. Broadcast to Cloud Sync for multi-device visibility
+    try {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'PLACE_ORDER',
+          payload: { order: newOrder },
+        }),
+      }).catch(() => {});
+    } catch (e) {}
 
     return { success: true, orderId };
   };
@@ -832,6 +904,27 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setApprovals((prev) => [newApproval, ...prev]);
     }
 
+    // Broadcast to Cloud Sync API
+    try {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'CREATE_BILL',
+          payload: {
+            bill: newBill,
+            order: newOrder,
+            customer: {
+              id: customerId,
+              name: billInput.customerName,
+              phone: billInput.customerPhone,
+              spent: totalAmount,
+            },
+          },
+        }),
+      }).catch(() => {});
+    } catch (e) {}
+
     return {
       billNumber,
       orderId,
@@ -876,6 +969,21 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       })
     );
 
+    // Broadcast to Cloud Sync API
+    try {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'PROCESS_RETURN',
+          payload: {
+            returnRecord: newReturn,
+            restockItems: returnInput.selectedItems,
+          },
+        }),
+      }).catch(() => {});
+    } catch (e) {}
+
     return { success: true, returnId };
   };
 
@@ -886,6 +994,18 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     setApprovals((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: decision } : a)).filter((a) => a.id !== id)
     );
+
+    try {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'PROCESS_APPROVAL',
+          payload: { id, decision },
+        }),
+      }).catch(() => {});
+    } catch (e) {}
+
     return { success: true };
   };
 
