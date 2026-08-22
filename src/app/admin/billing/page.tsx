@@ -6,7 +6,19 @@ import { Footer } from '@/components/layout/Footer';
 import { useStoreData } from '@/context/StoreDataContext';
 import { CameraCaptureModal } from '@/components/admin/CameraCaptureModal';
 import { executeEndToEndBillingCascadeAction, BillItemPayload, CreateBillResult } from '@/lib/actions/billing';
-import { Receipt, Camera, Plus, Trash2, CheckCircle2, Sparkles, Printer, ArrowRight, X, Image as ImageIcon } from 'lucide-react';
+import {
+  Receipt,
+  Camera,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Printer,
+  ArrowRight,
+  X,
+  Image as ImageIcon,
+  MessageCircle,
+  Share2,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminBillingPage() {
@@ -26,7 +38,7 @@ export default function AdminBillingPage() {
   const [newItemImage, setNewItemImage] = useState<string | null>(null);
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
-  // End-to-End Cascade Result
+  // Bill Result
   const [billResult, setBillResult] = useState<CreateBillResult | null>(null);
 
   const handleAddItem = () => {
@@ -60,6 +72,41 @@ export default function AdminBillingPage() {
 
   const totalAmount = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
 
+  const getWhatsAppLink = () => {
+    if (!customerPhone || !billResult) return '#';
+    const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+    const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+    const itemsText = items
+      .map(
+        (it) =>
+          `• ${it.product_name} (Qty: ${it.quantity}) - ₹${(
+            it.unit_price * it.quantity
+          ).toLocaleString()}`
+      )
+      .join('\n');
+
+    const message =
+      `*SAREETHI FASHION RETAIL - DIGITAL INVOICE*\n\n` +
+      `Hello *${customerName}*,\n` +
+      `Thank you for shopping with us! Here is your purchase receipt:\n\n` +
+      `📄 *Bill No:* ${billResult.billNumber}\n` +
+      `📦 *Order ID:* ${billResult.orderId}\n` +
+      `📅 *Date:* ${new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })}\n\n` +
+      `*Items Purchased:*\n` +
+      `${itemsText}\n\n` +
+      `💰 *Total Amount Paid:* ₹${totalAmount.toLocaleString()}\n` +
+      `✅ *Payment Status:* Confirmed\n\n` +
+      `We hope you love your purchase! Visit us again soon at Sareethi.\n` +
+      `_Sareethi Fashion Retail - Deoghar & Online_`;
+
+    return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+  };
+
   const handleGenerateBill = () => {
     if (items.length === 0) {
       alert('Please add at least one item to the bill.');
@@ -71,7 +118,7 @@ export default function AdminBillingPage() {
     }
 
     startTransition(async () => {
-      // 1. Update persistent local store state
+      // 1. Update persistent local store state & orders database
       const result = await createBill({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
@@ -106,74 +153,71 @@ export default function AdminBillingPage() {
               <h1 className="font-serif text-2xl font-bold">Physical Store Billing Desk</h1>
             </div>
             <p className="text-xs text-purple-200 mt-1">
-              Complete End-to-End Cascade: Bill $\rightarrow$ PDF $\rightarrow$ Order $\rightarrow$ Inventory $\rightarrow$ Revenue/Profit $\rightarrow$ Customer History $\rightarrow$ Dashboard $\rightarrow$ AI Follow-up Trigger.
+              Create instant digital bills, update inventory, save order records, and send the bill directly to the customer's WhatsApp.
             </p>
           </div>
-          <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold">
-            Controlled Tool Cascade
+          <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp Direct Billing
           </span>
         </div>
 
         {billResult ? (
-          /* Bill Confirmation & End-to-End Cascade Result */
-          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg space-y-6 max-w-3xl mx-auto">
+          /* Bill Confirmation Screen with WhatsApp & Print Actions */
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0" />
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-gray-900">End-to-End Transaction Cascade Complete!</h2>
-                  <p className="text-xs text-gray-500">Bill No: <span className="font-mono font-bold text-purple-950">{billResult.billNumber}</span> • Order: <span className="font-mono font-bold text-purple-950">{billResult.orderId}</span></p>
+                  <h2 className="font-serif text-2xl font-bold text-gray-900">Bill Generated Successfully!</h2>
+                  <p className="text-xs text-gray-500">
+                    Bill No: <span className="font-mono font-bold text-purple-950">{billResult.billNumber}</span> • Saved to Orders
+                  </p>
                 </div>
               </div>
+            </div>
+
+            {/* Prominent Action Buttons: Send via WhatsApp & Print */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <a
+                href={getWhatsAppLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" /> Send Bill via WhatsApp
+              </a>
+
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-purple-950 text-white font-bold text-xs rounded-lg hover:bg-purple-900 flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="py-3 px-4 bg-purple-950 hover:bg-purple-900 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer className="w-4 h-4" /> PRINT PDF
+                <Printer className="w-4 h-4" /> Print / Download PDF
               </button>
             </div>
 
-            {/* Cascade Flow Summary Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
-                <span className="text-[10px] font-bold text-emerald-700 uppercase block">1. Inventory</span>
-                <span className="font-bold text-emerald-950 text-xs">Stock Decremented</span>
-              </div>
-              <div className="bg-purple-50 border border-purple-200 p-3 rounded-xl">
-                <span className="text-[10px] font-bold text-purple-700 uppercase block">2. Revenue/Profit</span>
-                <span className="font-bold text-purple-950 text-xs">+₹{billResult.totalAmount.toLocaleString()} Logged</span>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
-                <span className="text-[10px] font-bold text-blue-700 uppercase block">3. Customer History</span>
-                <span className="font-bold text-blue-950 text-xs">LTV & Orders Updated</span>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                <span className="text-[10px] font-bold text-amber-700 uppercase block">4. AI Follow-Up</span>
-                <span className="font-bold text-amber-950 text-xs">{billResult.followupGenerated ? 'Queued for Approval' : 'Checked'}</span>
-              </div>
-            </div>
-
-            {/* PDF Invoice Rendered Preview */}
-            <div className="border-2 border-dashed border-gray-200 p-6 rounded-xl bg-gray-50/50 space-y-4 font-mono text-xs">
+            {/* Printable Digital Invoice Preview */}
+            <div className="border-2 border-dashed border-gray-200 p-6 rounded-xl bg-gray-50/60 space-y-4 font-mono text-xs">
               <div className="text-center border-b border-gray-200 pb-4 space-y-1">
                 <h3 className="font-serif text-xl font-bold text-purple-950 font-sans">SAREETHI FASHION RETAIL</h3>
-                <p className="text-gray-500">123 Market Street, Main Galleria, New Delhi</p>
-                <p className="text-gray-500">Bill No: {billResult.billNumber} • Date: {new Date().toLocaleDateString()}</p>
+                <p className="text-gray-500 font-sans">Main Galleria, Deoghar, Jharkhand</p>
+                <p className="text-gray-500 font-sans">
+                  Bill No: {billResult.billNumber} • Date: {new Date().toLocaleDateString()}
+                </p>
               </div>
 
               <div className="flex justify-between text-gray-700 border-b border-gray-200 pb-2">
-                <span>Customer: {customerName}</span>
-                <span>Contact: {customerPhone}</span>
+                <span>Customer: <strong className="text-gray-900 font-sans">{customerName}</strong></span>
+                <span>Contact: <strong className="text-gray-900 font-sans">{customerPhone}</strong></span>
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between font-bold border-b border-gray-300 pb-1 text-gray-900">
+                <div className="flex justify-between font-bold border-b border-gray-300 pb-1 text-gray-900 font-sans">
                   <span className="w-1/2">Item Description</span>
                   <span className="w-1/4 text-center">Qty</span>
                   <span className="w-1/4 text-right">Price</span>
                 </div>
                 {items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-700">
+                  <div key={idx} className="flex justify-between text-gray-700 font-sans">
                     <span className="w-1/2 line-clamp-1">{it.product_name}</span>
                     <span className="w-1/4 text-center">{it.quantity}</span>
                     <span className="w-1/4 text-right">₹{(it.unit_price * it.quantity).toLocaleString()}</span>
@@ -181,38 +225,27 @@ export default function AdminBillingPage() {
                 ))}
               </div>
 
-              <div className="border-t-2 border-gray-900 pt-3 flex justify-between font-bold text-sm text-gray-900 font-sans">
-                <span>TOTAL AMOUNT PAYABLE</span>
-                <span>₹{billResult.totalAmount.toLocaleString()}</span>
+              <div className="border-t-2 border-gray-900 pt-3 flex justify-between font-bold text-base text-gray-900 font-sans">
+                <span>TOTAL AMOUNT PAID</span>
+                <span className="text-purple-950">₹{totalAmount.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* AI Follow-Up Draft */}
-            {billResult.followupGenerated && (
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-bold text-purple-950 text-xs">
-                    <Sparkles className="w-4 h-4 text-amber-500" /> AI Follow-Up Recommendation Created
-                  </span>
-                  <Link href="/admin/approvals" className="text-xs font-bold text-purple-950 underline hover:text-purple-800">
-                    Review In Queue $\rightarrow$
-                  </Link>
-                </div>
-                <p className="text-xs text-purple-800 bg-white p-3 rounded border border-purple-100 italic">
-                  "{billResult.suggestedFollowupMessage}"
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-              <Link href="/admin/dashboard" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-1">
-                View Admin Dashboard <ArrowRight className="w-3.5 h-3.5" />
+            {/* Navigation Options */}
+            <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-xs">
+              <Link href="/admin/orders" className="font-bold text-purple-950 hover:underline flex items-center gap-1">
+                View in Admin Orders Desk <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               <button
-                onClick={() => { setBillResult(null); setItems([]); setCustomerName(''); setCustomerPhone(''); }}
-                className="px-6 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md cursor-pointer"
+                onClick={() => {
+                  setBillResult(null);
+                  setItems([]);
+                  setCustomerName('');
+                  setCustomerPhone('');
+                }}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors cursor-pointer"
               >
-                Start New Bill
+                + Create Another Bill
               </button>
             </div>
           </div>
@@ -237,7 +270,7 @@ export default function AdminBillingPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Contact Phone Number *</label>
+                  <label className="block font-semibold text-gray-700 mb-1">Customer WhatsApp Number *</label>
                   <input
                     type="tel"
                     required
@@ -262,7 +295,7 @@ export default function AdminBillingPage() {
                     <Camera className="w-4 h-4 text-amber-400" />
                     {newItemImage ? 'Retake / Change Photo' : 'Open Live Camera / Snap Photo'}
                   </button>
-                  <span className="text-gray-500 text-[11px]">Attach a photo of the physical garment</span>
+                  <span className="text-gray-500 text-[11px]">Attach photo of garment</span>
                 </div>
 
                 {/* Attached Image Thumbnail */}
@@ -290,7 +323,7 @@ export default function AdminBillingPage() {
                     <label className="block font-semibold text-gray-700 mb-1">Product Description *</label>
                     <input
                       type="text"
-                      placeholder="e.g. Pink Pochampally Saree"
+                      placeholder="e.g. Mustard Printed Silk Saree"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none"
@@ -355,9 +388,10 @@ export default function AdminBillingPage() {
                 <button
                   onClick={handleGenerateBill}
                   disabled={isPending || items.length === 0}
-                  className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-lg disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm tracking-wider uppercase rounded-xl shadow-lg disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {isPending ? 'Executing Cascade...' : 'GENERATE BILL & EXECUTE CASCADE'} <ArrowRight className="w-4 h-4" />
+                  <MessageCircle className="w-4 h-4 fill-white" />
+                  {isPending ? 'Generating Bill...' : 'GENERATE BILL & SEND VIA WHATSAPP'}
                 </button>
               </div>
             </div>
