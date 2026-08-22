@@ -91,24 +91,24 @@ export default function AdminBillingPage() {
     const message =
       `*SAREETHI FASHION RETAIL - DIGITAL INVOICE*\n\n` +
       `Hello *${customerName}*,\n` +
-      `Thank you for shopping with us! Here is your purchase receipt:\n\n` +
-      `📄 *Bill No:* ${billResult.billNumber}\n` +
-      `📦 *Order ID:* ${billResult.orderId}\n` +
-      `📅 *Date:* ${new Date().toLocaleDateString('en-GB', {
+      `Thank you for shopping with us! Here is your official purchase receipt:\n\n` +
+      `*Bill No:* ${billResult.billNumber}\n` +
+      `*Order ID:* ${billResult.orderId}\n` +
+      `*Date:* ${new Date().toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       })}\n\n` +
       `*Items Purchased:*\n` +
       `${itemsText}\n\n` +
-      `💰 *Total Amount Paid:* ₹${totalAmount.toLocaleString()}\n` +
-      `✅ *Payment Status:* Confirmed\n\n` +
-      `📄 *Official Digital & PDF Invoice:*\n` +
+      `*Total Amount Paid:* ₹${totalAmount.toLocaleString()}\n` +
+      `*Payment Status:* Confirmed (Paid)\n\n` +
+      `*View / Download Official Invoice:*\n` +
       `${invoiceUrl}\n\n` +
       `We hope you love your purchase! Visit us again soon at Sareethi.\n` +
       `_Sareethi Fashion Retail - Deoghar & Online_`;
 
-    return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+    return `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(message)}`;
   };
 
   const handleGenerateBill = () => {
