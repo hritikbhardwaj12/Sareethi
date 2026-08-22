@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, RefreshCw, X, Check, Upload, AlertCircle, Sparkles } from 'lucide-react';
-import { useStoreData, StoreProduct } from '@/context/StoreDataContext';
+import { Camera, RefreshCw, X, Check, Upload, AlertCircle, Plus } from 'lucide-react';
+import { useStoreData } from '@/context/StoreDataContext';
 
 interface CameraCaptureModalProps {
   onClose: () => void;
@@ -23,9 +23,11 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [matchedProduct, setMatchedProduct] = useState<StoreProduct | null>(null);
-  const [confidence, setConfidence] = useState<number>(0.96);
+
+  // Manual Item Inputs
+  const [productName, setProductName] = useState('');
+  const [productPrice, setProductPrice] = useState('');
+  const [selectedSKU, setSelectedSKU] = useState('');
 
   // Start device camera on mount
   useEffect(() => {
@@ -54,7 +56,7 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
         console.warn('Camera stream error:', err);
         setCameraError(
           err.name === 'NotAllowedError'
-            ? 'Camera permission was denied. You can still upload or snap a photo using the file picker.'
+            ? 'Camera permission was denied. You can upload or snap a photo using the file picker.'
             : 'Could not access device camera stream directly. Please use the photo upload option.'
         );
       }
@@ -81,7 +83,6 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         setCapturedImage(dataUrl);
-        analyzeImage(dataUrl);
       }
     }
   };
@@ -93,41 +94,41 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
         setCapturedImage(dataUrl);
-        analyzeImage(dataUrl);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const analyzeImage = (photoData: string) => {
-    setIsAnalyzing(true);
-
-    // Match against available active store products
-    setTimeout(() => {
-      const activeProds = products.filter((p) => p.status !== 'DELETED');
-      // Pick random or first matching product from store
-      const picked = activeProds.length > 0 ? activeProds[Math.floor(Math.random() * activeProds.length)] : products[0];
-      setMatchedProduct(picked);
-      setConfidence(0.95 + Math.random() * 0.04);
-      setIsAnalyzing(false);
-    }, 900);
-  };
-
   const handleRetake = () => {
     setCapturedImage(null);
-    setMatchedProduct(null);
+  };
+
+  const handleQuickPick = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const prodId = e.target.value;
+    setSelectedSKU(prodId);
+    if (!prodId) return;
+    const prod = products.find((p) => p.id === prodId);
+    if (prod) {
+      setProductName(prod.name);
+      setProductPrice(prod.selling_price.toString());
+    }
   };
 
   const handleConfirmAdd = () => {
-    if (matchedProduct) {
-      onSelectProduct({
-        product_id: matchedProduct.id,
-        product_name: matchedProduct.name,
-        unit_price: matchedProduct.selling_price,
-        captured_image_url: capturedImage || matchedProduct.image,
-      });
-      onClose();
+    if (!productName.trim() || !productPrice) {
+      alert('Please enter a product description and price.');
+      return;
     }
+
+    onSelectProduct({
+      product_id: selectedSKU || `ITEM-${Math.floor(1000 + Math.random() * 9000)}`,
+      product_name: productName.trim(),
+      unit_price: parseFloat(productPrice) || 0,
+      captured_image_url:
+        capturedImage ||
+        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+    });
+    onClose();
   };
 
   return (
@@ -205,44 +206,63 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
               </div>
             </div>
           ) : (
-            /* Image Preview & AI Analysis Result */
-            <div className="space-y-4">
-              <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+            /* Image Preview & Manual Product Entry */
+            <div className="space-y-4 text-xs">
+              <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 max-h-48">
                 <img src={capturedImage} alt="Captured Garment" className="w-full h-full object-cover" />
                 <button
                   onClick={handleRetake}
-                  className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-black"
+                  className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-black cursor-pointer"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Retake
+                  <RefreshCw className="w-3.5 h-3.5" /> Retake Photo
                 </button>
               </div>
 
-              {isAnalyzing ? (
-                <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex items-center gap-3 text-xs text-purple-950">
-                  <RefreshCw className="w-4 h-4 animate-spin text-purple-900" />
-                  <span className="font-semibold">AI Visual Matcher analyzing garment color, weave & silhouette...</span>
-                </div>
-              ) : matchedProduct ? (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 text-xs">
-                  <div className="flex items-center justify-between font-bold text-emerald-950">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-emerald-600" /> AI Visual Match Detected ({Math.round(confidence * 100)}%)
-                    </span>
-                    <span className="font-mono text-[10px] bg-emerald-100 px-2 py-0.5 rounded">
-                      {matchedProduct.id}
-                    </span>
-                  </div>
+              {/* Quick Select from existing catalog */}
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">Quick Select From Catalogue (Optional):</label>
+                <select
+                  value={selectedSKU}
+                  onChange={handleQuickPick}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none"
+                >
+                  <option value="">-- Custom Manual Entry --</option>
+                  {products
+                    .filter((p) => p.status !== 'DELETED')
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (₹{p.selling_price}) - {p.id}
+                      </option>
+                    ))}
+                </select>
+              </div>
 
-                  <p className="font-bold text-gray-900 text-sm">{matchedProduct.name}</p>
-
-                  <div className="flex justify-between items-center pt-1 border-t border-emerald-100 text-xs">
-                    <span className="text-gray-600">
-                      Category: <strong>{matchedProduct.category}</strong> • Stock: <strong>{matchedProduct.stock_quantity}</strong>
-                    </span>
-                    <span className="font-bold text-emerald-800 text-base">₹{matchedProduct.selling_price.toLocaleString()}</span>
-                  </div>
+              {/* Manual Product Name & Price */}
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Product Description *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Silk Saree / Handloom Kurta"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none"
+                  />
                 </div>
-              ) : null}
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Price (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="1299"
+                    value={productPrice}
+                    onChange={(e) => setProductPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none font-bold text-sm"
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -252,18 +272,18 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-100"
+            className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-100 cursor-pointer"
           >
             Cancel
           </button>
 
-          {capturedImage && matchedProduct && (
+          {capturedImage && (
             <button
               type="button"
               onClick={handleConfirmAdd}
               className="px-5 py-2 bg-purple-950 text-white text-xs font-bold rounded-xl hover:bg-purple-900 shadow-md flex items-center gap-1.5 cursor-pointer"
             >
-              <Check className="w-4 h-4" /> ADD MATCHED ITEM TO BILL
+              <Plus className="w-4 h-4" /> ADD ITEM TO BILL
             </button>
           )}
         </div>
