@@ -100,25 +100,19 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* 6 Interactive Clickable Stat Cards */}
+        {/* 6 Key Stat Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Sales Total */}
-          <Link
-            href="/admin/billing"
-            className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2 hover:border-purple-950 hover:shadow-md transition-all group block cursor-pointer"
-          >
+          {/* Sales Total (Static Card - Link turned off) */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-gray-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 group-hover:text-purple-950">Sales Total</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Sales Total</span>
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-xl font-bold text-gray-900">₹{totalSales.toLocaleString()}</p>
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="font-bold text-emerald-600">Live synchronized</span>
-              <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-purple-950" />
-            </div>
-          </Link>
+            <span className="text-[10px] font-bold text-emerald-600 block">Live synchronized</span>
+          </div>
 
-          {/* Orders */}
+          {/* Orders (Clickable) */}
           <Link
             href="/orders"
             className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2 hover:border-purple-950 hover:shadow-md transition-all group block cursor-pointer"
@@ -134,21 +128,15 @@ export default function AdminDashboardPage() {
             </div>
           </Link>
 
-          {/* Items Sold */}
-          <Link
-            href="/admin/store"
-            className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2 hover:border-purple-950 hover:shadow-md transition-all group block cursor-pointer"
-          >
+          {/* Items Sold (Static Card - Link turned off) */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-gray-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 group-hover:text-purple-950">Items Sold</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Items Sold</span>
               <Package className="w-4 h-4 text-blue-600" />
             </div>
             <p className="text-xl font-bold text-gray-900">{totalItemsSold}</p>
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-gray-400 font-medium">Sarees & Suits</span>
-              <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-purple-950" />
-            </div>
-          </Link>
+            <span className="text-[10px] text-gray-400 font-medium block">Sarees & Suits</span>
+          </div>
 
           {/* Returns */}
           <Link
