@@ -3,49 +3,63 @@
 import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
+import { useStoreData } from '@/context/StoreDataContext';
 import { processReturnAction } from '@/lib/actions/returns-exceptions';
 import { RotateCcw, Search, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-const MOCK_BILL_DATABASE = {
-  'INV-20260820-0042': {
-    billNumber: 'INV-20260820-0042',
-    customerName: 'Priya Sharma',
-    date: '20 Aug 2026',
-    items: [
-      {
-        product_id: 'SAR-00001',
-        product_name: 'Pink Pochampally Ikkat Chiffon Saree With Unstitched Blouse Piece',
-        unit_price: 1299,
-        quantity: 1,
-      },
-      {
-        product_id: 'SUIT-00001',
-        product_name: 'Royal Blue Straight Chanderi Silk Suit Set With Dupatta',
-        unit_price: 1899,
-        quantity: 1,
-      },
-    ],
-  },
-};
-
 export default function AdminReturnsPage() {
+  const { bills, orders, processReturn } = useStoreData();
   const [isPending, startTransition] = useTransition();
-  const [searchBill, setSearchBill] = useState('INV-20260820-0042');
-  const [selectedBill, setSelectedBill] = useState<any | null>(MOCK_BILL_DATABASE['INV-20260820-0042']);
-  const [selectedItems, setSelectedItems] = useState<string[]>(['SAR-00001']);
+  const [searchBill, setSearchBill] = useState('');
+  const [selectedBill, setSelectedBill] = useState<any | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [reason, setReason] = useState('Size Fit Issue');
   const [returnConfirmed, setReturnConfirmed] = useState<any | null>(null);
 
+  // Search in both bills and orders
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const found = (MOCK_BILL_DATABASE as any)[searchBill.trim()];
-    if (found) {
-      setSelectedBill(found);
+    const query = searchBill.trim().toUpperCase();
+    if (!query) return;
+
+    const foundBill = bills.find((b) => b.billNumber.toUpperCase() === query || b.orderId?.toUpperCase() === query);
+    if (foundBill) {
+      setSelectedBill({
+        billNumber: foundBill.billNumber,
+        customerName: foundBill.customerName,
+        date: foundBill.date,
+        items: foundBill.items.map((it) => ({
+          product_id: it.product_id,
+          product_name: it.product_name,
+          unit_price: it.unit_price,
+          quantity: it.quantity,
+        })),
+      });
+      setSelectedItems(foundBill.items.map((i) => i.product_id));
       setReturnConfirmed(null);
-    } else {
-      alert('Bill number not found in database.');
+      return;
     }
+
+    const foundOrder = orders.find((o) => o.id.toUpperCase() === query);
+    if (foundOrder) {
+      setSelectedBill({
+        billNumber: foundOrder.bill_number || foundOrder.id,
+        customerName: foundOrder.customer_name,
+        date: foundOrder.date,
+        items: foundOrder.items.map((it) => ({
+          product_id: it.id,
+          product_name: it.name,
+          unit_price: it.price,
+          quantity: it.quantity,
+        })),
+      });
+      setSelectedItems(foundOrder.items.map((i) => i.id));
+      setReturnConfirmed(null);
+      return;
+    }
+
+    alert(`No bill or order found for "${query}". Try searching an existing Order ID or Invoice number.`);
   };
 
   const toggleItemSelect = (productId: string) => {
@@ -60,14 +74,36 @@ export default function AdminReturnsPage() {
     if (!selectedBill || selectedItems.length === 0) return;
 
     const itemsToReturn = selectedBill.items.filter((i: any) => selectedItems.includes(i.product_id));
+    const totalRefundAmount = itemsToReturn.reduce(
+      (sum: number, i: any) => sum + i.unit_price * i.quantity,
+      0
+    );
 
     startTransition(async () => {
-      const res = await processReturnAction({
-        bill_number: selectedBill.billNumber,
-        returned_items: itemsToReturn,
+      // 1. Process in local store data context
+      const res = await processReturn({
+        billNumber: selectedBill.billNumber,
+        customerName: selectedBill.customerName,
+        selectedItems,
         reason,
+        refundAmount: totalRefundAmount,
       });
-      setReturnConfirmed(res);
+
+      // 2. Call server action for backend audit
+      try {
+        await processReturnAction({
+          bill_number: selectedBill.billNumber,
+          returned_items: itemsToReturn,
+          reason,
+        });
+      } catch (err) {
+        // Safe fallback
+      }
+
+      setReturnConfirmed({
+        returnId: res.returnId,
+        totalRefundAmount,
+      });
     });
   };
 
@@ -93,21 +129,54 @@ export default function AdminReturnsPage() {
         </div>
 
         {/* Bill Search Form */}
-        <form onSubmit={handleSearch} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex gap-3">
-          <input
-            type="text"
-            placeholder="Enter Invoice Number (e.g. INV-20260820-0042)"
-            value={searchBill}
-            onChange={(e) => setSearchBill(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-xs focus:ring-1 focus:ring-purple-950 focus:outline-none font-mono"
-          />
-          <button
-            type="submit"
-            className="px-5 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 flex items-center gap-1.5 shadow-sm"
-          >
-            <Search className="w-4 h-4" /> FIND BILL
-          </button>
-        </form>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <label className="text-xs font-semibold text-gray-700 block">Search by Invoice Number or Order ID:</label>
+          <form onSubmit={handleSearch} className="flex gap-3">
+            <input
+              type="text"
+              placeholder="e.g. INV-20260820-0042 or ORD-1028"
+              value={searchBill}
+              onChange={(e) => setSearchBill(e.target.value)}
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-xs focus:ring-1 focus:ring-purple-950 focus:outline-none font-mono"
+            />
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Search className="w-4 h-4" /> FIND BILL / ORDER
+            </button>
+          </form>
+
+          {/* Quick Lookup Chips */}
+          <div className="flex items-center gap-2 pt-2 text-xs text-gray-500 overflow-x-auto">
+            <span>Quick pick:</span>
+            {orders.slice(0, 3).map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => {
+                  setSearchBill(o.id);
+                  setSelectedBill({
+                    billNumber: o.bill_number || o.id,
+                    customerName: o.customer_name,
+                    date: o.date,
+                    items: o.items.map((it) => ({
+                      product_id: it.id,
+                      product_name: it.name,
+                      unit_price: it.price,
+                      quantity: it.quantity,
+                    })),
+                  });
+                  setSelectedItems(o.items.map((i) => i.id));
+                  setReturnConfirmed(null);
+                }}
+                className="px-2.5 py-1 bg-gray-100 hover:bg-purple-50 hover:text-purple-950 rounded-lg font-mono text-[11px] border border-gray-200"
+              >
+                {o.id} ({o.customer_name})
+              </button>
+            ))}
+          </div>
+        </div>
 
         {returnConfirmed ? (
           /* Return Confirmation Result */
@@ -125,8 +194,12 @@ export default function AdminReturnsPage() {
             </div>
             <div className="pt-4 flex justify-center gap-3">
               <button
-                onClick={() => setReturnConfirmed(null)}
-                className="px-6 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md"
+                onClick={() => {
+                  setReturnConfirmed(null);
+                  setSelectedBill(null);
+                  setSearchBill('');
+                }}
+                className="px-6 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md cursor-pointer"
               >
                 Process Another Return
               </button>
@@ -200,7 +273,7 @@ export default function AdminReturnsPage() {
               <button
                 onClick={handleConfirmReturn}
                 disabled={isPending || selectedItems.length === 0}
-                className="px-6 py-3.5 bg-purple-950 text-white font-bold text-xs tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-md disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-3.5 bg-purple-950 text-white font-bold text-xs tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-md disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               >
                 {isPending ? 'Processing Restock...' : 'CONFIRM RETURN & RESTOCK'} <ArrowRight className="w-4 h-4" />
               </button>

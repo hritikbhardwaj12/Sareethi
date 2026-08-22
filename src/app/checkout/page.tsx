@@ -4,23 +4,48 @@ import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { useStoreData } from '@/context/StoreDataContext';
+import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { items, totalAmount, clearCart } = useCart();
+  const { placeOrder } = useStoreData();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-    setCreatedOrderId(orderId);
-    setOrderConfirmed(true);
-    clearCart();
+    if (!items.length) return;
+    setIsSubmitting(true);
+    try {
+      const res = await placeOrder({
+        customerName: name.trim(),
+        customerPhone: phone.trim(),
+        deliveryAddress: address.trim(),
+        items: items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          price: it.price,
+          quantity: it.quantity,
+          image: it.image,
+          size: it.size,
+        })),
+        totalAmount,
+      });
+
+      setCreatedOrderId(res.orderId);
+      setOrderConfirmed(true);
+      clearCart();
+    } catch (err) {
+      console.error('Failed to place order:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -93,9 +118,18 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 transition-colors shadow-lg flex items-center justify-center gap-2"
+                disabled={isSubmitting || items.length === 0}
+                className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 disabled:opacity-50 transition-colors shadow-lg flex items-center justify-center gap-2"
               >
-                CONFIRM ORDER (₹{totalAmount.toLocaleString()}) <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> PROCESSING ORDER...
+                  </>
+                ) : (
+                  <>
+                    CONFIRM ORDER (₹{totalAmount.toLocaleString()}) <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
 

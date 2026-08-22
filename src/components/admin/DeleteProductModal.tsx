@@ -3,6 +3,7 @@
 import { useTransition } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { deleteProductAction } from '@/lib/actions/admin-store';
+import { useStoreData } from '@/context/StoreDataContext';
 
 interface DeleteProductModalProps {
   product: { id: string; name: string };
@@ -10,11 +11,21 @@ interface DeleteProductModalProps {
 }
 
 export function DeleteProductModal({ product, onClose }: DeleteProductModalProps) {
+  const { deleteProduct } = useStoreData();
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      await deleteProductAction(product.id);
+      // 1. Soft-delete in local store
+      await deleteProduct(product.id);
+
+      // 2. Call server action if available
+      try {
+        await deleteProductAction(product.id);
+      } catch (e) {
+        // Fallback
+      }
+
       onClose();
     });
   };

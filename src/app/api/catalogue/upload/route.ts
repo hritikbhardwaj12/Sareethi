@@ -41,10 +41,6 @@ export async function POST(req: NextRequest) {
     let extractedProducts: any[] = [];
     const defaultFallbackPrice = 1499;
 
-    const clientExtractedText = (formData.get('extractedText') as string) || '';
-    const fileName = (formData.get('fileName') as string) || file?.name || 'catalogue.pdf';
-    const fileType = (formData.get('fileType') as string) || file?.type || 'application/pdf';
-
     let parsedText = '';
     
     // Extract raw text from PDF using pdf-parse if buffer exists
@@ -250,8 +246,8 @@ Return JSON array in this schema:
 
     return NextResponse.json({
       workflowId,
-      fileName: file.name,
-      fileType: file.type,
+      fileName: file?.name || fileName,
+      fileType: file?.type || fileType,
       extractedProducts,
     });
   } catch (err: any) {

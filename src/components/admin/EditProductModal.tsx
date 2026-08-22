@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { X } from 'lucide-react';
 import { updateProductAction, UpdateProductPayload } from '@/lib/actions/admin-store';
+import { useStoreData } from '@/context/StoreDataContext';
 import { Category } from '@/types/database';
 
 interface EditProductModalProps {
@@ -22,6 +23,7 @@ interface EditProductModalProps {
 }
 
 export function EditProductModal({ product, onClose }: EditProductModalProps) {
+  const { updateProduct } = useStoreData();
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<UpdateProductPayload>({
     id: product.id,
@@ -39,7 +41,26 @@ export function EditProductModal({ product, onClose }: EditProductModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      await updateProductAction(formData);
+      // 1. Update local synchronized state
+      await updateProduct(product.id, {
+        name: formData.name,
+        category: formData.category,
+        selling_price: formData.selling_price,
+        cost_price: formData.cost_price,
+        stock_quantity: formData.stock_quantity,
+        color: formData.color,
+        fabric: formData.fabric,
+        style: formData.style,
+        occasion: formData.occasion,
+      });
+
+      // 2. Call server action if connected
+      try {
+        await updateProductAction(formData);
+      } catch (e) {
+        // Fallback gracefully if offline
+      }
+
       onClose();
     });
   };

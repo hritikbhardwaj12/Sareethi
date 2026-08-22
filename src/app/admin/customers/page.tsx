@@ -3,60 +3,22 @@
 import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
-import { triggerReengagementFollowupAction, simulateSendMessageAction } from '@/lib/actions/customer-intelligence';
-import { Users, Sparkles, TrendingUp, RotateCcw, Clock, CheckCircle2, MessageSquare, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useStoreData } from '@/context/StoreDataContext';
+import { triggerReengagementFollowupAction } from '@/lib/actions/customer-intelligence';
+import { Users, Sparkles, TrendingUp, RotateCcw, Clock, CheckCircle2, MessageSquare, ArrowRight, ShieldCheck, User } from 'lucide-react';
 import Link from 'next/link';
 
-const MOCK_CUSTOMERS = [
-  {
-    id: 'CUST-00101',
-    name: 'Priya Sharma',
-    phone: '9876543210',
-    total_orders: 8,
-    total_spent: 14890,
-    aov: 1861,
-    return_rate: '12.5%',
-    preferred: 'Saree',
-    days_inactive: 42,
-    avg_interval: 30,
-    status: 'OPPORTUNITY_DETECTED',
-  },
-  {
-    id: 'CUST-00102',
-    name: 'Anita Roy',
-    phone: '9812345678',
-    total_orders: 5,
-    total_spent: 9495,
-    aov: 1899,
-    return_rate: '0%',
-    preferred: 'Suit',
-    days_inactive: 14,
-    avg_interval: 25,
-    status: 'ACTIVE_RECENT',
-  },
-  {
-    id: 'CUST-00103',
-    name: 'Meera Patel',
-    phone: '9898765432',
-    total_orders: 12,
-    total_spent: 24980,
-    aov: 2081,
-    return_rate: '8.3%',
-    preferred: 'Saree',
-    days_inactive: 55,
-    avg_interval: 35,
-    status: 'OPPORTUNITY_DETECTED',
-  },
-];
-
 export default function AdminCustomersPage() {
+  const { customers } = useStoreData();
   const [isPending, startTransition] = useTransition();
-  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(MOCK_CUSTOMERS[0]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [triggerResult, setTriggerResult] = useState<any | null>(null);
+
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || customers[0] || null;
 
   const handleGenerateFollowup = (customer: any) => {
     startTransition(async () => {
-      const res = await triggerReengagementFollowupAction(customer.id, customer.name, customer.days_inactive);
+      const res = await triggerReengagementFollowupAction(customer.id, customer.name, customer.days_inactive || 30);
       setTriggerResult(res);
     });
   };
@@ -86,57 +48,68 @@ export default function AdminCustomersPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: Customer Cards List */}
           <div className="lg:col-span-7 space-y-4">
-            <h2 className="font-serif text-lg font-bold text-gray-900">Customer Behavior Profiles ({MOCK_CUSTOMERS.length})</h2>
-            {MOCK_CUSTOMERS.map((cust) => (
-              <div
-                key={cust.id}
-                onClick={() => setSelectedCustomer(cust)}
-                className={`p-5 rounded-2xl border bg-white shadow-xs space-y-3 cursor-pointer transition-all ${
-                  selectedCustomer?.id === cust.id ? 'border-purple-950 ring-1 ring-purple-950' : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-purple-950 bg-purple-50 px-2 py-0.5 rounded">
-                        {cust.id}
-                      </span>
-                      <h3 className="font-bold text-gray-900 text-base">{cust.name}</h3>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5">Phone: {cust.phone} • Preferred: {cust.preferred}</p>
-                  </div>
-
-                  {cust.status === 'OPPORTUNITY_DETECTED' ? (
-                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-600" /> Re-engagement Due
-                    </span>
-                  ) : (
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      Active Customer
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-xs pt-2 border-t border-gray-100">
-                  <div>
-                    <span className="text-[10px] text-gray-400 block">Orders</span>
-                    <span className="font-bold text-gray-900">{cust.total_orders}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block">Lifetime Spend</span>
-                    <span className="font-bold text-gray-900">₹{cust.total_spent.toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block">Avg Order (AOV)</span>
-                    <span className="font-bold text-gray-900">₹{cust.aov.toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block">Days Inactive</span>
-                    <span className="font-bold text-rose-600">{cust.days_inactive} days</span>
-                  </div>
-                </div>
+            <h2 className="font-serif text-lg font-bold text-gray-900">Customer Behavior Profiles ({customers.length})</h2>
+            {customers.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center space-y-2">
+                <User className="w-8 h-8 text-gray-300 mx-auto" />
+                <p className="text-sm font-semibold text-gray-800">No customer records found</p>
+                <p className="text-xs text-gray-500">Customer profiles will automatically be created when orders or bills are recorded.</p>
               </div>
-            ))}
+            ) : (
+              customers.map((cust) => (
+                <div
+                  key={cust.id}
+                  onClick={() => {
+                    setSelectedCustomerId(cust.id);
+                    setTriggerResult(null);
+                  }}
+                  className={`p-5 rounded-2xl border bg-white shadow-xs space-y-3 cursor-pointer transition-all ${
+                    selectedCustomer?.id === cust.id ? 'border-purple-950 ring-1 ring-purple-950' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-purple-950 bg-purple-50 px-2 py-0.5 rounded">
+                          {cust.id}
+                        </span>
+                        <h3 className="font-bold text-gray-900 text-base">{cust.name}</h3>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">Phone: {cust.phone} • Preferred: {cust.preferred || 'Saree'}s</p>
+                    </div>
+
+                    {cust.status === 'OPPORTUNITY_DETECTED' ? (
+                      <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-600" /> Re-engagement Due
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                        Active Customer
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-xs pt-2 border-t border-gray-100">
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Orders</span>
+                      <span className="font-bold text-gray-900">{cust.total_orders}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Lifetime Spend</span>
+                      <span className="font-bold text-gray-900">₹{cust.total_spent.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Avg Order (AOV)</span>
+                      <span className="font-bold text-gray-900">₹{cust.aov.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Days Inactive</span>
+                      <span className="font-bold text-rose-600">{cust.days_inactive} days</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Right: Detailed Customer Insights & Action Panel */}
@@ -152,16 +125,22 @@ export default function AdminCustomersPage() {
                 <div className="bg-purple-50/60 p-4 rounded-xl space-y-2 text-xs border border-purple-100">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Observed Purchase Velocity:</span>
-                    <span className="font-bold text-purple-950">{selectedCustomer.days_inactive} days vs {selectedCustomer.avg_interval}-day avg</span>
+                    <span className="font-bold text-purple-950">{selectedCustomer.days_inactive} days vs {selectedCustomer.avg_interval || 30}-day avg</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Return Rate:</span>
-                    <span className="font-bold text-gray-900">{selectedCustomer.return_rate}</span>
+                    <span className="font-bold text-gray-900">{selectedCustomer.return_rate || '0%'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Primary Preference:</span>
-                    <span className="font-bold text-gray-900">{selectedCustomer.preferred}s</span>
+                    <span className="font-bold text-gray-900">{selectedCustomer.preferred || 'Saree'}s</span>
                   </div>
+                  {selectedCustomer.last_purchase_date && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Last Purchase:</span>
+                      <span className="font-bold text-gray-900">{selectedCustomer.last_purchase_date}</span>
+                    </div>
+                  )}
                 </div>
 
                 {triggerResult ? (
@@ -171,7 +150,7 @@ export default function AdminCustomersPage() {
                     </div>
                     <p className="text-emerald-800">Approval Ticket: <span className="font-mono font-bold">{triggerResult.approvalId}</span></p>
                     <p className="italic text-gray-700 bg-white p-2.5 rounded border border-emerald-100">
-                      "{triggerResult.followup.suggestedMessage}"
+                      "{triggerResult.followup?.suggestedMessage || 'Re-engagement message prepared.'}"
                     </p>
                     <Link
                       href="/admin/approvals"
@@ -184,7 +163,7 @@ export default function AdminCustomersPage() {
                   <button
                     onClick={() => handleGenerateFollowup(selectedCustomer)}
                     disabled={isPending}
-                    className="w-full py-3.5 bg-purple-950 text-white font-bold text-xs tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3.5 bg-purple-950 text-white font-bold text-xs tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-amber-400" />
                     {isPending ? 'Analyzing & Drafting...' : 'GENERATE AI FOLLOW-UP OUTREACH'}

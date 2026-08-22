@@ -4,97 +4,20 @@ import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCard } from '@/components/product/ProductCard';
+import { useStoreData } from '@/context/StoreDataContext';
 import { Filter, SlidersHorizontal, ChevronDown } from 'lucide-react';
 
-const PRODUCTS_DATA = [
-  {
-    id: 'SAR-00001',
-    name: 'Pink Pochampally Ikkat Chiffon Saree With Unstitched Blouse Piece',
-    category: 'Saree' as const,
-    selling_price: 1299,
-    original_price: 3899,
-    discount_percent: 67,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Pink', fabric: 'Chiffon', size: 'ONESIZE', occasion: 'Festive' }],
-  },
-  {
-    id: 'SAR-00002',
-    name: 'Black Woven Design Banarsi Silk Blend Saree',
-    category: 'Saree' as const,
-    selling_price: 1349,
-    original_price: 4249,
-    discount_percent: 68,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Black', fabric: 'Banarsi Silk Blend', size: 'ONESIZE', occasion: 'Wedding' }],
-  },
-  {
-    id: 'SAR-00003',
-    name: 'Mustard Printed Silk Blend Saree With Zari Border',
-    category: 'Saree' as const,
-    selling_price: 999,
-    original_price: 3449,
-    discount_percent: 71,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Mustard', fabric: 'Silk Blend', size: 'ONESIZE', occasion: 'Casual' }],
-  },
-  {
-    id: 'SAR-00004',
-    name: 'Burgundy Solid Satin Saree With Embellished Border',
-    category: 'Saree' as const,
-    selling_price: 979,
-    original_price: 2949,
-    discount_percent: 67,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1610030469668-98e550d6193c?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Burgundy', fabric: 'Satin', size: 'ONESIZE', occasion: 'Party' }],
-  },
-  {
-    id: 'SUIT-00001',
-    name: 'Royal Blue Straight Chanderi Silk Suit Set With Dupatta',
-    category: 'Suit' as const,
-    selling_price: 1899,
-    original_price: 4999,
-    discount_percent: 62,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Blue', fabric: 'Chanderi Silk', size: 'M', occasion: 'Festive' }],
-  },
-  {
-    id: 'SUIT-00002',
-    name: 'Emerald Green Anarkali Cotton Suit Set',
-    category: 'Suit' as const,
-    selling_price: 1699,
-    original_price: 3999,
-    discount_percent: 57,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Green', fabric: 'Cotton', size: 'L', occasion: 'Casual' }],
-  },
-];
-
 export default function ProductListingPage() {
+  const { products } = useStoreData();
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedColor, setSelectedColor] = useState<string>('ALL');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const filteredProducts = PRODUCTS_DATA.filter((p) => {
+  const activeProducts = products.filter((p) => p.status !== 'DELETED');
+
+  const filteredProducts = activeProducts.filter((p) => {
     if (selectedCategory !== 'ALL' && p.category !== selectedCategory) return false;
-    if (selectedColor !== 'ALL' && p.product_attributes[0]?.color !== selectedColor) return false;
+    if (selectedColor !== 'ALL' && p.color !== selectedColor) return false;
     return true;
   });
 
@@ -128,23 +51,23 @@ export default function ProductListingPage() {
               <span className="flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Filters</span>
               {(selectedCategory !== 'ALL' || selectedColor !== 'ALL') && (
                 <button
-                  onClick={() => { setSelectedCategory('ALL'); setSelectedColor('ALL'); }}
-                  className="text-rose-600 text-[10px] lowercase hover:underline"
+                  onClick={() => {
+                    setSelectedCategory('ALL');
+                    setSelectedColor('ALL');
+                  }}
+                  className="text-[11px] text-rose-600 font-semibold hover:underline"
                 >
-                  reset
+                  Clear All
                 </button>
               )}
             </div>
 
             {/* Category Filter */}
-            <div>
-              <div className="flex items-center justify-between font-semibold text-gray-900 mb-2">
-                <span>CATEGORY</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </div>
-              <div className="space-y-1.5 pl-1">
+            <div className="space-y-2">
+              <span className="font-bold text-gray-900 block uppercase tracking-wider text-[11px]">Category</span>
+              <div className="space-y-1.5">
                 {['ALL', 'Saree', 'Suit'].map((cat) => (
-                  <label key={cat} className="flex items-center gap-2 text-gray-600 hover:text-purple-950 cursor-pointer">
+                  <label key={cat} className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-purple-950">
                     <input
                       type="radio"
                       name="category"
@@ -152,57 +75,133 @@ export default function ProductListingPage() {
                       onChange={() => setSelectedCategory(cat)}
                       className="accent-purple-950"
                     />
-                    <span>{cat === 'ALL' ? 'All Categories' : cat}</span>
+                    <span>{cat === 'ALL' ? 'All Styles' : `${cat}s`}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Color Filter */}
-            <div>
-              <div className="flex items-center justify-between font-semibold text-gray-900 mb-2">
-                <span>COLORS</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </div>
-              <div className="space-y-1.5 pl-1">
-                {['ALL', 'Pink', 'Black', 'Mustard', 'Burgundy', 'Blue', 'Green'].map((col) => (
-                  <label key={col} className="flex items-center gap-2 text-gray-600 hover:text-purple-950 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="color"
-                      checked={selectedColor === col}
-                      onChange={() => setSelectedColor(col)}
-                      className="accent-purple-950"
-                    />
-                    <span>{col}</span>
-                  </label>
+            <div className="space-y-2 pt-4 border-t border-gray-100">
+              <span className="font-bold text-gray-900 block uppercase tracking-wider text-[11px]">Color Palette</span>
+              <div className="grid grid-cols-2 gap-2">
+                {['ALL', 'Pink', 'Black', 'Mustard', 'Burgundy', 'Blue', 'Green'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-2.5 py-1.5 rounded text-left border transition-colors ${
+                      selectedColor === color
+                        ? 'border-purple-950 bg-purple-50 font-bold text-purple-950'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {color}
+                  </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Fabric */}
-            <div>
-              <div className="flex items-center justify-between font-semibold text-gray-900 mb-2">
-                <span>FABRIC</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </div>
-              <div className="space-y-1 text-gray-500 pl-1">
-                <p>Chiffon</p>
-                <p>Banarsi Silk</p>
-                <p>Chanderi Silk</p>
-                <p>Cotton</p>
               </div>
             </div>
           </aside>
 
           {/* Product Grid */}
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="flex-1">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 space-y-3">
+                <p className="text-sm font-semibold text-gray-800">No products match your selected filters.</p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('ALL');
+                    setSelectedColor('ALL');
+                  }}
+                  className="text-xs text-purple-950 font-bold underline"
+                >
+                  Reset all filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={{
+                      id: product.id,
+                      name: product.name,
+                      category: product.category,
+                      selling_price: product.selling_price,
+                      original_price: product.original_price,
+                      discount_percent: product.discount_percent,
+                      status: product.status,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      images: (product.images || [product.image]).map((img, i) => ({
+                        image_url: img,
+                        is_primary: i === 0,
+                      })),
+                      product_attributes: [
+                        {
+                          color: product.color,
+                          fabric: product.fabric,
+                          size: product.size || 'ONESIZE',
+                          occasion: product.occasion,
+                        },
+                      ],
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      {/* Mobile Filter Drawer */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex justify-end">
+          <div className="bg-white w-72 h-full p-6 space-y-6 overflow-y-auto">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h2 className="font-bold text-sm text-gray-900">Filters</h2>
+              <button onClick={() => setMobileFilterOpen(false)} className="text-xs font-bold text-gray-500">
+                Close
+              </button>
+            </div>
+            {/* Category Filter */}
+            <div className="space-y-2">
+              <span className="font-bold text-gray-900 text-xs block">Category</span>
+              {['ALL', 'Saree', 'Suit'].map((cat) => (
+                <label key={cat} className="flex items-center gap-2 text-xs">
+                  <input
+                    type="radio"
+                    name="mobile-cat"
+                    checked={selectedCategory === cat}
+                    onChange={() => setSelectedCategory(cat)}
+                  />
+                  <span>{cat}</span>
+                </label>
+              ))}
+            </div>
+            {/* Color Filter */}
+            <div className="space-y-2 pt-3 border-t">
+              <span className="font-bold text-gray-900 text-xs block">Color</span>
+              {['ALL', 'Pink', 'Black', 'Mustard', 'Burgundy', 'Blue', 'Green'].map((col) => (
+                <label key={col} className="flex items-center gap-2 text-xs">
+                  <input
+                    type="radio"
+                    name="mobile-col"
+                    checked={selectedColor === col}
+                    onChange={() => setSelectedColor(col)}
+                  />
+                  <span>{col}</span>
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={() => setMobileFilterOpen(false)}
+              className="w-full py-2.5 bg-purple-950 text-white font-bold text-xs rounded-lg mt-4"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

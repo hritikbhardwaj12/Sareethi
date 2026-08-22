@@ -5,7 +5,7 @@ import { Product } from '@/types/database';
 interface ProductCardProps {
   product: Product & {
     images?: { image_url: string; is_primary: boolean }[];
-    product_attributes?: { color?: string; fabric?: string; size?: string }[];
+    product_attributes?: { color?: string; fabric?: string; size?: string; occasion?: string }[];
   };
 }
 

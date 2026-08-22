@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
+import { useStoreData } from '@/context/StoreDataContext';
 import { executeEndToEndBillingCascadeAction, matchProductPhotoAction, BillItemPayload, CreateBillResult } from '@/lib/actions/billing';
 import { Receipt, Camera, Plus, Trash2, CheckCircle2, Sparkles, Printer, ArrowRight, TrendingUp, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminBillingPage() {
+  const { createBill } = useStoreData();
   const [isPending, startTransition] = useTransition();
 
   // Customer Details
@@ -75,11 +77,24 @@ export default function AdminBillingPage() {
     if (items.length === 0 || !customerName || !customerPhone) return;
 
     startTransition(async () => {
-      const result = await executeEndToEndBillingCascadeAction({
-        customer_name: customerName,
-        customer_phone: customerPhone,
+      // 1. Update persistent local store state
+      const result = await createBill({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
         items,
       });
+
+      // 2. Call server action for backend cascade
+      try {
+        await executeEndToEndBillingCascadeAction({
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          items,
+        });
+      } catch (err) {
+        // Safe fallback
+      }
+
       setBillResult(result);
     });
   };

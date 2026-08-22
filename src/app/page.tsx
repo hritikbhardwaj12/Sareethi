@@ -1,65 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCard } from '@/components/product/ProductCard';
-
-const FEATURED_PRODUCTS = [
-  {
-    id: 'SAR-00001',
-    name: 'Pink Pochampally Ikkat Chiffon Saree With Unstitched Blouse Piece',
-    category: 'Saree' as const,
-    selling_price: 1299,
-    original_price: 3899,
-    discount_percent: 67,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Pink', fabric: 'Chiffon', size: 'ONESIZE' }],
-  },
-  {
-    id: 'SAR-00002',
-    name: 'Black Woven Design Banarsi Silk Blend Saree',
-    category: 'Saree' as const,
-    selling_price: 1349,
-    original_price: 4249,
-    discount_percent: 68,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Black', fabric: 'Banarsi Silk Blend', size: 'ONESIZE' }],
-  },
-  {
-    id: 'SAR-00003',
-    name: 'Mustard Printed Silk Blend Saree With Zari Border',
-    category: 'Saree' as const,
-    selling_price: 999,
-    original_price: 3449,
-    discount_percent: 71,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Mustard', fabric: 'Silk Blend', size: 'ONESIZE' }],
-  },
-  {
-    id: 'SUIT-00001',
-    name: 'Royal Blue Straight Chanderi Silk Suit Set With Dupatta',
-    category: 'Suit' as const,
-    selling_price: 1899,
-    original_price: 4999,
-    discount_percent: 62,
-    status: 'ACTIVE' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    images: [{ image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80', is_primary: true }],
-    product_attributes: [{ color: 'Blue', fabric: 'Chanderi Silk', size: 'M' }],
-  },
-];
+import { useStoreData } from '@/context/StoreDataContext';
 
 export default function HomePage() {
+  const { products } = useStoreData();
+  const activeProducts = products.filter((p) => p.status !== 'DELETED').slice(0, 4);
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Header />
@@ -80,13 +31,13 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-2">
               <Link
-                href="/products?category=Saree"
+                href="/products"
                 className="px-6 py-3 bg-white text-purple-950 font-medium text-sm rounded-lg hover:bg-purple-50 transition-colors shadow-md flex items-center gap-2"
               >
                 Shop Sarees <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                href="/products?category=Suit"
+                href="/products"
                 className="px-6 py-3 bg-purple-900/60 text-white font-medium text-sm rounded-lg border border-purple-700 hover:bg-purple-900 transition-colors"
               >
                 Shop Suit Sets
@@ -129,8 +80,33 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {FEATURED_PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {activeProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  category: product.category,
+                  selling_price: product.selling_price,
+                  original_price: product.original_price,
+                  discount_percent: product.discount_percent,
+                  status: product.status,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  images: (product.images || [product.image]).map((img, i) => ({
+                    image_url: img,
+                    is_primary: i === 0,
+                  })),
+                  product_attributes: [
+                    {
+                      color: product.color,
+                      fabric: product.fabric,
+                      size: product.size || 'ONESIZE',
+                      occasion: product.occasion,
+                    },
+                  ],
+                }}
+              />
             ))}
           </div>
         </section>
