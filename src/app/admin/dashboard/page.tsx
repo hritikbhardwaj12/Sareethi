@@ -112,9 +112,9 @@ export default function AdminDashboardPage() {
             <span className="text-[10px] font-bold text-emerald-600 block">Live synchronized</span>
           </div>
 
-          {/* Orders (Clickable) */}
+          {/* Orders (Clickable to Admin Orders Desk) */}
           <Link
-            href="/orders"
+            href="/admin/orders"
             className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2 hover:border-purple-950 hover:shadow-md transition-all group block cursor-pointer"
           >
             <div className="flex items-center justify-between text-gray-400">
@@ -328,8 +328,8 @@ export default function AdminDashboardPage() {
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
               <h3 className="font-serif text-base font-bold text-gray-900">Orders ({orders.length})</h3>
-              <Link href="/orders" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-0.5">
-                Open Orders <ArrowUpRight className="w-3.5 h-3.5" />
+              <Link href="/admin/orders" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-0.5">
+                Open Orders Desk <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
             <div className="space-y-2.5 text-xs">

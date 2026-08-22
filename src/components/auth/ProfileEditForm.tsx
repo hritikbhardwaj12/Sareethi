@@ -20,16 +20,16 @@ export function ProfileEditForm({ initialPhone, initialAddress }: ProfileEditFor
 
   // Sync with saved profile from store context or localStorage
   useEffect(() => {
-    if (savedProfile) {
-      if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
-      if (!address && savedProfile.address) setAddress(savedProfile.address);
+    if (savedProfile?.phone || savedProfile?.address) {
+      if (savedProfile.phone) setPhone(savedProfile.phone);
+      if (savedProfile.address) setAddress(savedProfile.address);
     } else {
       try {
         const local = localStorage.getItem('sareethi_saved_profile');
         if (local) {
           const parsed = JSON.parse(local);
-          if (!phone && parsed.phone) setPhone(parsed.phone);
-          if (!address && parsed.address) setAddress(parsed.address);
+          if (parsed.phone) setPhone(parsed.phone);
+          if (parsed.address) setAddress(parsed.address);
         }
       } catch (e) {}
     }

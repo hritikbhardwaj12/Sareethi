@@ -2,20 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Shield, RotateCcw, AlertTriangle, Users, AlertOctagon, Cpu } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Shield, RotateCcw, AlertTriangle, Users, AlertOctagon, Cpu, Package } from 'lucide-react';
 
 export function AdminHeader() {
   const pathname = usePathname();
 
   const navItems = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Orders', href: '/admin/orders', icon: Package },
     { label: 'Store', href: '/admin/store', icon: ShoppingBag },
     { label: 'Catalogue', href: '/admin/catalogue', icon: Sparkles },
     { label: 'Billing', href: '/admin/billing', icon: Receipt },
     { label: 'Returns', href: '/admin/returns', icon: RotateCcw },
     { label: 'Exceptions', href: '/admin/exceptions', icon: AlertTriangle },
     { label: 'Customers', href: '/admin/customers', icon: Users },
-    { label: 'Failure Demo', href: '/admin/failure-demo', icon: AlertOctagon },
     { label: 'Approvals', href: '/admin/approvals', icon: Shield },
   ];
 
