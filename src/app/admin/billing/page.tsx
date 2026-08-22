@@ -17,7 +17,7 @@ import {
   X,
   Image as ImageIcon,
   MessageCircle,
-  Share2,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -86,6 +86,8 @@ export default function AdminBillingPage() {
       )
       .join('\n');
 
+    const invoiceUrl = `https://sareethi.vercel.app/invoice/${encodeURIComponent(billResult.billNumber)}`;
+
     const message =
       `*SAREETHI FASHION RETAIL - DIGITAL INVOICE*\n\n` +
       `Hello *${customerName}*,\n` +
@@ -101,6 +103,8 @@ export default function AdminBillingPage() {
       `${itemsText}\n\n` +
       `💰 *Total Amount Paid:* ₹${totalAmount.toLocaleString()}\n` +
       `✅ *Payment Status:* Confirmed\n\n` +
+      `📄 *Official Digital & PDF Invoice:*\n` +
+      `${invoiceUrl}\n\n` +
       `We hope you love your purchase! Visit us again soon at Sareethi.\n` +
       `_Sareethi Fashion Retail - Deoghar & Online_`;
 
@@ -141,30 +145,34 @@ export default function AdminBillingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <AdminHeader />
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans print:bg-white print:min-h-0">
+      {/* Admin Header (Hidden on Print) */}
+      <div className="print:hidden">
+        <AdminHeader />
+      </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Header */}
-        <div className="bg-purple-950 text-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8 print:p-0 print:m-0 print:max-w-none">
+        {/* Header (Hidden on Print) */}
+        <div className="bg-purple-950 text-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
           <div>
             <div className="flex items-center gap-2">
               <Receipt className="w-5 h-5 text-amber-400" />
               <h1 className="font-serif text-2xl font-bold">Physical Store Billing Desk</h1>
             </div>
             <p className="text-xs text-purple-200 mt-1">
-              Create instant digital bills, update inventory, save order records, and send the bill directly to the customer's WhatsApp.
+              Create instant digital bills, save order records, and send the official receipt directly to the customer's WhatsApp.
             </p>
           </div>
           <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
-            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp Direct Billing
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp Direct Delivery
           </span>
         </div>
 
         {billResult ? (
-          /* Bill Confirmation Screen with WhatsApp & Print Actions */
-          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg space-y-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          /* Bill Confirmation Screen with WhatsApp & Clean Print */
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg space-y-6 max-w-2xl mx-auto print:shadow-none print:border-none print:p-0 print:max-w-none">
+            {/* Top confirmation banner (Hidden on Print) */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4 print:hidden">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0" />
                 <div>
@@ -176,63 +184,79 @@ export default function AdminBillingPage() {
               </div>
             </div>
 
-            {/* Prominent Action Buttons: Send via WhatsApp & Print */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {/* Action Buttons: WhatsApp Send & Print (Hidden on Print) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 print:hidden">
               <a
                 href={getWhatsAppLink()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer text-center"
               >
                 <MessageCircle className="w-4 h-4 fill-white" /> Send Bill via WhatsApp
               </a>
 
               <button
                 onClick={() => window.print()}
-                className="py-3 px-4 bg-purple-950 hover:bg-purple-900 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="py-3.5 px-4 bg-purple-950 hover:bg-purple-900 text-white font-bold text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer text-center"
               >
-                <Printer className="w-4 h-4" /> Print / Download PDF
+                <Printer className="w-4 h-4" /> Print / Save as PDF
               </button>
             </div>
 
-            {/* Printable Digital Invoice Preview */}
-            <div className="border-2 border-dashed border-gray-200 p-6 rounded-xl bg-gray-50/60 space-y-4 font-mono text-xs">
-              <div className="text-center border-b border-gray-200 pb-4 space-y-1">
-                <h3 className="font-serif text-xl font-bold text-purple-950 font-sans">SAREETHI FASHION RETAIL</h3>
-                <p className="text-gray-500 font-sans">Main Galleria, Deoghar, Jharkhand</p>
-                <p className="text-gray-500 font-sans">
-                  Bill No: {billResult.billNumber} • Date: {new Date().toLocaleDateString()}
+            {/* Official Digital Tax Invoice Box (Printed cleanly) */}
+            <div className="border-2 border-dashed border-gray-300 print:border-solid print:border-gray-900 p-6 sm:p-8 rounded-2xl bg-gray-50/50 print:bg-white space-y-5 text-xs">
+              {/* Receipt Header */}
+              <div className="text-center border-b border-gray-300 pb-4 space-y-1">
+                <h3 className="font-serif text-2xl font-bold text-purple-950">SAREETHI FASHION RETAIL</h3>
+                <p className="text-gray-500">Main Galleria, Deoghar, Jharkhand • GST: 20ABCDE1234F1Z5</p>
+                <p className="text-gray-600 font-mono text-[11px]">
+                  Bill No: <strong>{billResult.billNumber}</strong> • Date: {new Date().toLocaleDateString('en-GB')}
                 </p>
               </div>
 
-              <div className="flex justify-between text-gray-700 border-b border-gray-200 pb-2">
-                <span>Customer: <strong className="text-gray-900 font-sans">{customerName}</strong></span>
-                <span>Contact: <strong className="text-gray-900 font-sans">{customerPhone}</strong></span>
+              {/* Customer Info */}
+              <div className="flex justify-between text-gray-700 border-b border-gray-200 pb-3">
+                <div>
+                  <span className="text-gray-400 font-bold uppercase text-[10px] block">Customer:</span>
+                  <strong className="text-gray-900 text-sm">{customerName}</strong>
+                </div>
+                <div className="text-right">
+                  <span className="text-gray-400 font-bold uppercase text-[10px] block">Contact Number:</span>
+                  <strong className="text-gray-900 text-sm">{customerPhone}</strong>
+                </div>
               </div>
 
+              {/* Items Table */}
               <div className="space-y-2">
-                <div className="flex justify-between font-bold border-b border-gray-300 pb-1 text-gray-900 font-sans">
+                <div className="flex justify-between font-bold border-b-2 border-gray-900 pb-1.5 text-gray-900 text-[11px] uppercase tracking-wider">
                   <span className="w-1/2">Item Description</span>
                   <span className="w-1/4 text-center">Qty</span>
                   <span className="w-1/4 text-right">Price</span>
                 </div>
                 {items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-700 font-sans">
-                    <span className="w-1/2 line-clamp-1">{it.product_name}</span>
+                  <div key={idx} className="flex justify-between text-gray-800 py-1 border-b border-gray-100 last:border-none">
+                    <span className="w-1/2 font-semibold line-clamp-1">{it.product_name}</span>
                     <span className="w-1/4 text-center">{it.quantity}</span>
-                    <span className="w-1/4 text-right">₹{(it.unit_price * it.quantity).toLocaleString()}</span>
+                    <span className="w-1/4 text-right font-bold">₹{(it.unit_price * it.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t-2 border-gray-900 pt-3 flex justify-between font-bold text-base text-gray-900 font-sans">
+              {/* Total Summary */}
+              <div className="border-t-2 border-gray-900 pt-3 flex justify-between font-bold text-base text-gray-900">
                 <span>TOTAL AMOUNT PAID</span>
-                <span className="text-purple-950">₹{totalAmount.toLocaleString()}</span>
+                <span className="text-purple-950 font-bold text-xl">₹{totalAmount.toLocaleString()}</span>
+              </div>
+
+              {/* Footer Note */}
+              <div className="text-center pt-4 border-t border-gray-200 text-gray-500 text-[11px] space-y-0.5">
+                <p className="font-semibold text-gray-800">Thank you for shopping at Sareethi!</p>
+                <p className="text-[10px] text-gray-400">Digital Copy available at: https://sareethi.vercel.app/invoice/{billResult.billNumber}</p>
               </div>
             </div>
 
-            {/* Navigation Options */}
-            <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-xs">
+            {/* Navigation Options (Hidden on Print) */}
+            <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-xs print:hidden">
               <Link href="/admin/orders" className="font-bold text-purple-950 hover:underline flex items-center gap-1">
                 View in Admin Orders Desk <ArrowRight className="w-3.5 h-3.5" />
               </Link>
@@ -410,7 +434,10 @@ export default function AdminBillingPage() {
         />
       )}
 
-      <Footer />
+      {/* Footer (Hidden on Print) */}
+      <div className="print:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }
