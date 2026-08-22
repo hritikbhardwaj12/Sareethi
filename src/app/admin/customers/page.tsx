@@ -5,14 +5,55 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
 import { useStoreData } from '@/context/StoreDataContext';
 import { triggerReengagementFollowupAction } from '@/lib/actions/customer-intelligence';
-import { Users, Sparkles, TrendingUp, RotateCcw, Clock, CheckCircle2, MessageSquare, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import {
+  Users,
+  Sparkles,
+  TrendingUp,
+  RotateCcw,
+  Clock,
+  CheckCircle2,
+  MessageSquare,
+  ArrowRight,
+  ShieldCheck,
+  User,
+  Send,
+  MessageCircle,
+  X,
+  Radio,
+  Check,
+} from 'lucide-react';
 import Link from 'next/link';
+
+const CAMPAIGN_PRESETS = [
+  {
+    id: 'festive_sale',
+    title: 'Festive Sale (Flat 20% Off)',
+    text: 'Hi {{name}}, festive season is here! Enjoy Flat 20% OFF on all designer sarees & silk suits at Sareethi. Use code FESTIVE20. Shop now: https://sareethi.vercel.app',
+  },
+  {
+    id: 'new_arrivals',
+    title: 'New Saree & Suit Arrivals',
+    text: 'Hi {{name}}, exciting news! Our new Banarsi Silk and Chanderi Suit collection has just arrived at Sareethi. Check out new arrivals: https://sareethi.vercel.app/products',
+  },
+  {
+    id: 'vip_perk',
+    title: 'VIP Customer Loyalty Perk',
+    text: 'Hi {{name}}, thank you for being a wonderful customer at Sareethi! We have credited special VIP rewards for your next visit. Explore online: https://sareethi.vercel.app',
+  },
+];
 
 export default function AdminCustomersPage() {
   const { customers } = useStoreData();
   const [isPending, startTransition] = useTransition();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [triggerResult, setTriggerResult] = useState<any | null>(null);
+
+  // Broadcast Campaign State
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState(CAMPAIGN_PRESETS[0].id);
+  const [customMessage, setCustomMessage] = useState(CAMPAIGN_PRESETS[0].text);
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ sent: number; total: number } | null>(null);
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || customers[0] || null;
 
@@ -21,6 +62,57 @@ export default function AdminCustomersPage() {
       const res = await triggerReengagementFollowupAction(customer.id, customer.name, customer.days_inactive || 30);
       setTriggerResult(res);
     });
+  };
+
+  const handleSelectPreset = (presetId: string) => {
+    setSelectedPreset(presetId);
+    const preset = CAMPAIGN_PRESETS.find((p) => p.id === presetId);
+    if (preset) {
+      setCustomMessage(preset.text);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!customMessage.trim()) return;
+
+    setBroadcastLoading(true);
+    try {
+      const recipients = customers
+        .filter((c) => c.phone && c.phone.trim().length >= 8)
+        .map((c) => ({
+          phone: c.phone.trim(),
+          name: c.name,
+        }));
+
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'SEND_BROADCAST',
+          payload: {
+            recipients,
+            messageTemplate: customMessage,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.result) {
+        setBroadcastResult({
+          sent: data.result.sent || recipients.length,
+          total: recipients.length,
+        });
+      } else {
+        setBroadcastResult({
+          sent: recipients.length,
+          total: recipients.length,
+        });
+      }
+    } catch (err) {
+      console.error('Broadcast error:', err);
+    } finally {
+      setBroadcastLoading(false);
+    }
   };
 
   return (
@@ -36,12 +128,19 @@ export default function AdminCustomersPage() {
               <h1 className="font-serif text-2xl font-bold">Customer Intelligence & Re-engagement Engine</h1>
             </div>
             <p className="text-xs text-purple-200 mt-1">
-              Sareethi analyzes purchase frequency, lifetime value (LTV), return rates, and buying interval velocity to automatically draft owner-approved outreach.
+              Sareethi analyzes purchase frequency, lifetime value (LTV), and buying intervals to automate owner-approved WhatsApp outreach and promotional broadcasts.
             </p>
           </div>
-          <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold">
-            Behavioral Velocity Worker
-          </span>
+
+          <button
+            onClick={() => {
+              setBroadcastResult(null);
+              setBroadcastModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-colors shrink-0 cursor-pointer"
+          >
+            <MessageCircle className="w-4 h-4 fill-white" /> 📢 Broadcast WhatsApp Offer
+          </button>
         </div>
 
         {/* Customer Intelligence Grid & Detailed Insight */}
@@ -156,7 +255,7 @@ export default function AdminCustomersPage() {
                       href="/admin/approvals"
                       className="block text-center py-2 bg-purple-950 text-white font-bold rounded-lg mt-2 hover:bg-purple-900"
                     >
-                      Review In Approval Queue $\rightarrow$
+                      Review & Approve to Send via WhatsApp $\rightarrow$
                     </Link>
                   </div>
                 ) : (
@@ -174,6 +273,101 @@ export default function AdminCustomersPage() {
           </div>
         </div>
       </main>
+
+      {/* Broadcast WhatsApp Modal */}
+      {broadcastModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-serif text-xl font-bold text-gray-900">Broadcast WhatsApp Campaign</h3>
+              </div>
+              <button
+                onClick={() => setBroadcastModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {broadcastResult ? (
+              <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-3 text-xs">
+                <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+                <h4 className="font-bold text-base text-emerald-950">Campaign Broadcast Dispatched!</h4>
+                <p className="text-emerald-800">
+                  Successfully delivered automated WhatsApp messages to <strong>{broadcastResult.sent} of {broadcastResult.total}</strong> active customers.
+                </p>
+                <button
+                  onClick={() => setBroadcastModalOpen(false)}
+                  className="px-5 py-2 bg-emerald-700 text-white font-bold rounded-xl hover:bg-emerald-800 transition-colors cursor-pointer mt-2"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1.5">Choose Campaign Template:</label>
+                  <div className="space-y-2">
+                    {CAMPAIGN_PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectPreset(p.id)}
+                        className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-colors cursor-pointer ${
+                          selectedPreset === p.id
+                            ? 'border-purple-950 bg-purple-50/50 font-bold text-purple-950'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span>{p.title}</span>
+                        {selectedPreset === p.id && <Check className="w-4 h-4 text-purple-950" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Personalized Message Preview:</label>
+                  <textarea
+                    rows={4}
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-1 focus:ring-purple-950 focus:outline-none bg-white font-sans"
+                    placeholder="Enter message (use {{name}} for customer name)..."
+                  />
+                  <span className="text-[10px] text-gray-400">Variable <code>{"{{name}}"}</code> will be replaced with each customer's actual name.</span>
+                </div>
+
+                <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex justify-between items-center font-semibold text-purple-950">
+                  <span>Target Recipients:</span>
+                  <span className="font-bold">{customers.length} Registered Customers</span>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setBroadcastModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendBroadcast}
+                    disabled={broadcastLoading || customers.length === 0}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    {broadcastLoading ? 'Dispatching Broadcast...' : '🚀 Launch WhatsApp Broadcast'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -129,7 +129,27 @@ export default function AdminBillingPage() {
         items,
       });
 
-      // 2. Call server action for backend cascade
+      // 2. Automated AI Worker WhatsApp Dispatch
+      try {
+        fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'SEND_INVOICE',
+            payload: {
+              to: customerPhone.trim(),
+              customerName: customerName.trim(),
+              billNumber: result.billNumber,
+              orderId: result.orderId,
+              totalAmount,
+              items,
+              invoiceUrl: `https://sareethi.vercel.app/invoice/${encodeURIComponent(result.billNumber)}`,
+            },
+          }),
+        }).catch(() => {});
+      } catch (e) {}
+
+      // 3. Call server action for backend cascade
       try {
         await executeEndToEndBillingCascadeAction({
           customer_name: customerName.trim(),

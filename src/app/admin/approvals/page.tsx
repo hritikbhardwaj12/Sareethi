@@ -14,11 +14,35 @@ export default function AdminApprovalsPage() {
   const pendingApprovals = approvals.filter((a) => a.status === 'PENDING');
 
   const handleDecision = (id: string, decision: 'APPROVED' | 'EDITED' | 'REJECTED') => {
+    const targetApproval = approvals.find((a) => a.id === id);
+
     startTransition(async () => {
       // 1. Process in local store context
       await processApproval(id, decision);
 
-      // 2. Process via server action
+      // 2. Automated AI Worker WhatsApp Follow-Up Delivery if approved
+      if (decision === 'APPROVED' && targetApproval?.type === 'CUSTOMER_FOLLOWUP') {
+        const customer = targetApproval.payload?.customer_name;
+        const msg = targetApproval.payload?.suggested_message;
+        const phone = targetApproval.payload?.customer_phone || '9128737971';
+
+        try {
+          fetch('/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'SEND_FOLLOWUP',
+              payload: {
+                to: phone,
+                customerName: customer,
+                messageText: msg,
+              },
+            }),
+          }).catch(() => {});
+        } catch (e) {}
+      }
+
+      // 3. Process via server action
       try {
         await processApprovalAction(id, decision);
       } catch (e) {
