@@ -486,6 +486,9 @@ interface StoreDataContextType {
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
     suggestedMessage: string;
   }) => Promise<{ success: boolean; approvalId: string }>;
+
+  savedProfile: { fullName: string; phone: string; address: string } | null;
+  saveUserProfile: (profile: { fullName: string; phone: string; address: string }) => void;
 }
 
 const StoreDataContext = createContext<StoreDataContextType | undefined>(undefined);
@@ -497,6 +500,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const [bills, setBills] = useState<StoreBill[]>(INITIAL_BILLS);
   const [returns, setReturns] = useState<StoreReturn[]>(INITIAL_RETURNS);
   const [approvals, setApprovals] = useState<StoreApproval[]>(INITIAL_APPROVALS);
+  const [savedProfile, setSavedProfile] = useState<{ fullName: string; phone: string; address: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from LocalStorage on mount
@@ -511,6 +515,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         if (parsed.bills && Array.isArray(parsed.bills)) setBills(parsed.bills);
         if (parsed.returns && Array.isArray(parsed.returns)) setReturns(parsed.returns);
         if (parsed.approvals && Array.isArray(parsed.approvals)) setApprovals(parsed.approvals);
+        if (parsed.savedProfile) setSavedProfile(parsed.savedProfile);
+      }
+      const separateProfile = localStorage.getItem('sareethi_saved_profile');
+      if (separateProfile) {
+        setSavedProfile(JSON.parse(separateProfile));
       }
     } catch (e) {
       console.error('Error loading store data from localStorage', e);
@@ -518,6 +527,15 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setIsLoaded(true);
     }
   }, []);
+
+  const saveUserProfile = (profile: { fullName: string; phone: string; address: string }) => {
+    setSavedProfile(profile);
+    try {
+      localStorage.setItem('sareethi_saved_profile', JSON.stringify(profile));
+    } catch (err) {
+      console.error('Error saving profile to localStorage', err);
+    }
+  };
 
   // Save to LocalStorage whenever state changes
   useEffect(() => {
@@ -921,6 +939,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         bills,
         returns,
         approvals,
+        savedProfile,
         isLoaded,
         placeOrder,
         updateProduct,
@@ -929,6 +948,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         processReturn,
         processApproval,
         addDelayException,
+        saveUserProfile,
       }}
     >
       {children}

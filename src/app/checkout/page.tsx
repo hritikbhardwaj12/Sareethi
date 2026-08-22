@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { useStoreData } from '@/context/StoreDataContext';
-import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { updateProfileDetails } from '@/lib/auth/actions';
+import { CheckCircle2, ArrowRight, Loader2, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { items, totalAmount, clearCart } = useCart();
-  const { placeOrder } = useStoreData();
+  const { placeOrder, savedProfile, saveUserProfile } = useStoreData();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -18,11 +19,35 @@ export default function CheckoutPage() {
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
 
+  // Autofill from saved profile
+  useEffect(() => {
+    if (savedProfile) {
+      if (!name && savedProfile.fullName) setName(savedProfile.fullName);
+      if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
+      if (!address && savedProfile.address) setAddress(savedProfile.address);
+    }
+  }, [savedProfile]);
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!items.length) return;
     setIsSubmitting(true);
     try {
+      // 1. Save profile for next time in store context + local storage
+      saveUserProfile({
+        fullName: name.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+      });
+
+      // 2. Try updating database profile
+      try {
+        await updateProfileDetails(phone.trim(), address.trim());
+      } catch (e) {
+        // Fallback gracefully
+      }
+
+      // 3. Place order in data store
       const res = await placeOrder({
         customerName: name.trim(),
         customerPhone: phone.trim(),
@@ -113,6 +138,11 @@ export default function CheckoutPage() {
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
                   />
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 bg-purple-50/60 rounded-lg border border-purple-100 text-purple-950 text-[11px]">
+                  <UserCheck className="w-4 h-4 text-purple-900 shrink-0" />
+                  <span>Your details will be securely remembered and saved to your profile for future orders.</span>
                 </div>
               </div>
 

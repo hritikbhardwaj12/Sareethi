@@ -1,18 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Search, User, Menu, X, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, ArrowRight, Package } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export function Header() {
   const { totalItems, isOpen, setIsOpen, items, removeItem, updateQuantity, totalAmount } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button className="p-2 -ml-2 text-gray-700 hover:text-purple-900 md:hidden" aria-label="Open menu">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-2 text-gray-700 hover:text-purple-900 md:hidden cursor-pointer"
+              aria-label="Open menu"
+            >
               <Menu className="w-5 h-5" />
             </button>
             <Link href="/" className="flex items-center gap-2">
@@ -25,6 +31,9 @@ export function Header() {
             <Link href="/products?category=Saree" className="hover:text-purple-900 transition-colors">Sarees</Link>
             <Link href="/products?category=Suit" className="hover:text-purple-900 transition-colors">Suits</Link>
             <Link href="/products" className="hover:text-purple-900 transition-colors">New Arrivals</Link>
+            <Link href="/orders" className="hover:text-purple-900 transition-colors flex items-center gap-1">
+              <Package className="w-4 h-4 text-purple-900" /> My Orders
+            </Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -36,7 +45,7 @@ export function Header() {
             </Link>
             <button
               onClick={() => setIsOpen(true)}
-              className="p-2 text-gray-700 hover:text-purple-900 transition-colors relative"
+              className="p-2 text-gray-700 hover:text-purple-900 transition-colors relative cursor-pointer"
               aria-label="Shopping Cart"
             >
               <ShoppingBag className="w-5 h-5" />
@@ -49,6 +58,37 @@ export function Header() {
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden md:hidden">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl z-50 flex flex-col p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <span className="font-serif text-2xl font-bold text-purple-950">Sareethi</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <nav className="flex flex-col space-y-4 text-sm font-semibold text-gray-800">
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950">Home</Link>
+              <Link href="/products?category=Saree" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950">Festive Sarees</Link>
+              <Link href="/products?category=Suit" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950">Designer Suits</Link>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950">New Arrivals</Link>
+              <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950 flex items-center gap-2">
+                <Package className="w-4 h-4 text-purple-950" /> My Orders
+              </Link>
+              <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-950 flex items-center gap-2">
+                <User className="w-4 h-4 text-purple-950" /> Account Profile
+              </Link>
+              <Link href="/admin/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-purple-900 font-bold pt-4 border-t border-gray-100">
+                Admin Panel $\rightarrow$
+              </Link>
+            </nav>
+          </div>
+        </div>
+      )}
 
       {/* Slide-over Cart Drawer */}
       {isOpen && (

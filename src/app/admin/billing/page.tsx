@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
 import { useStoreData } from '@/context/StoreDataContext';
+import { CameraCaptureModal } from '@/components/admin/CameraCaptureModal';
 import { executeEndToEndBillingCascadeAction, matchProductPhotoAction, BillItemPayload, CreateBillResult } from '@/lib/actions/billing';
 import { Receipt, Camera, Plus, Trash2, CheckCircle2, Sparkles, Printer, ArrowRight, TrendingUp, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -37,19 +38,33 @@ export default function AdminBillingPage() {
   // Current Item Capture State
   const [newItemName, setNewItemName] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
-  const [matchingPhoto, setMatchingPhoto] = useState(false);
+  const [newItemImage, setNewItemImage] = useState('');
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   // End-to-End Cascade Result
   const [billResult, setBillResult] = useState<CreateBillResult | null>(null);
 
-  const handleCaptureAndMatch = async () => {
-    setMatchingPhoto(true);
-    const photoUrl = 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80';
-    const match = await matchProductPhotoAction(photoUrl);
+  const handleProductSelectedFromCamera = (matched: {
+    product_id: string;
+    product_name: string;
+    unit_price: number;
+    captured_image_url: string;
+  }) => {
+    setNewItemName(matched.product_name);
+    setNewItemPrice(matched.unit_price.toString());
+    setNewItemImage(matched.captured_image_url);
 
-    setNewItemName(match.matchedProductName);
-    setNewItemPrice(match.matchedPrice.toString());
-    setMatchingPhoto(false);
+    // Also auto-add item to bill list
+    setItems((prev) => [
+      ...prev,
+      {
+        product_id: matched.product_id,
+        product_name: matched.product_name,
+        unit_price: matched.unit_price,
+        quantity: 1,
+        captured_image_url: matched.captured_image_url,
+      },
+    ]);
   };
 
   const handleAddItem = () => {
@@ -256,16 +271,15 @@ export default function AdminBillingPage() {
               <h2 className="font-serif text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 pt-4">2. Capture & Match Item</h2>
 
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4 text-xs">
-                <div className="flex gap-3 items-center">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                   <button
                     type="button"
-                    onClick={handleCaptureAndMatch}
-                    disabled={matchingPhoto}
-                    className="px-4 py-2.5 bg-purple-950 text-white font-semibold rounded-lg hover:bg-purple-900 flex items-center gap-2 shadow-xs disabled:opacity-50"
+                    onClick={() => setCameraModalOpen(true)}
+                    className="px-4 py-2.5 bg-purple-950 text-white font-semibold rounded-lg hover:bg-purple-900 flex items-center gap-2 shadow-xs cursor-pointer"
                   >
-                    <Camera className="w-4 h-4" /> {matchingPhoto ? 'Matching AI...' : 'Capture Photo'}
+                    <Camera className="w-4 h-4 text-amber-400" /> Open Live Camera / Snap Photo
                   </button>
-                  <span className="text-gray-400">Simulates physical garment photo capture & AI SKU matching</span>
+                  <span className="text-gray-500 text-[11px]">Opens device camera or gallery for AI SKU matching</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
@@ -294,7 +308,7 @@ export default function AdminBillingPage() {
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="w-full py-2 bg-purple-900 text-white font-bold rounded-lg hover:bg-purple-800 flex items-center justify-center gap-1.5"
+                  className="w-full py-2 bg-purple-900 text-white font-bold rounded-lg hover:bg-purple-800 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> Add Item to Bill
                 </button>
@@ -308,12 +322,12 @@ export default function AdminBillingPage() {
                 <div className="space-y-3 mt-4 max-h-80 overflow-y-auto">
                   {items.map((item, idx) => (
                     <div key={idx} className="flex gap-3 text-xs border-b border-gray-100 pb-3 items-center">
-                      <img src={item.captured_image_url} alt={item.product_name} className="w-12 h-14 object-cover rounded bg-gray-50" />
+                      <img src={item.captured_image_url || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'} alt={item.product_name} className="w-12 h-14 object-cover rounded bg-gray-50" />
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900 line-clamp-1">{item.product_name}</p>
                         <p className="text-gray-500">Price: ₹{item.unit_price.toLocaleString()}</p>
                       </div>
-                      <button onClick={() => handleRemoveItem(idx)} className="text-rose-600 hover:text-rose-800 p-1">
+                      <button onClick={() => handleRemoveItem(idx)} className="text-rose-600 hover:text-rose-800 p-1 cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -330,7 +344,7 @@ export default function AdminBillingPage() {
                 <button
                   onClick={handleGenerateBill}
                   disabled={isPending || items.length === 0}
-                  className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-lg disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-purple-950 text-white font-bold text-sm tracking-wider uppercase rounded-xl hover:bg-purple-900 shadow-lg disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isPending ? 'Executing Cascade...' : 'GENERATE BILL & EXECUTE CASCADE'} <ArrowRight className="w-4 h-4" />
                 </button>
@@ -339,6 +353,14 @@ export default function AdminBillingPage() {
           </div>
         )}
       </main>
+
+      {/* Camera Live Modal */}
+      {cameraModalOpen && (
+        <CameraCaptureModal
+          onClose={() => setCameraModalOpen(false)}
+          onSelectProduct={handleProductSelectedFromCamera}
+        />
+      )}
 
       <Footer />
     </div>
