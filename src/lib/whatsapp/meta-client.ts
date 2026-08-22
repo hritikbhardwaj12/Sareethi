@@ -35,6 +35,12 @@ function cleanPhoneNumber(phone: string): string {
   return digits;
 }
 
+const DEFAULT_TOKEN =
+  process.env.META_WHATSAPP_TOKEN ||
+  'EAAPOadgSZCp4BSYCsAg8f2LOZBIl2f3y0t4V2Nsvn2OgpYbvrsZAXqc4ZALhGZAPchg3ARm9tU6m0opLbRFUw2iGWDUbEx7Pm6tYxHdnRZAWW3cxMbmqIUluuQj8C9BIGYY1xgvjTjwsktkWtJ4Sl9R4xQG2VsEpxQ8pYryZAOK3EvsdmxFLdqEcTJaWkwsEF7scjm0ZArAcBVmIgR9ZAwMAlVVO52ERFFLwLckroziAWEtR9cOH6HZA2OHrwiSJg7BA55eNuU0jeN5qyma4vaj8vjDl2ZA7wZDZD';
+
+const DEFAULT_PHONE_ID = process.env.META_PHONE_NUMBER_ID || '1269767522888414';
+
 /**
  * Sends a text message to a WhatsApp number via Meta Cloud API.
  */
@@ -42,8 +48,8 @@ export async function sendWhatsAppTextMessage({
   to,
   message,
 }: WhatsAppTextMessageParams): Promise<WhatsAppResponse> {
-  const token = process.env.META_WHATSAPP_TOKEN;
-  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+  const token = DEFAULT_TOKEN;
+  const phoneNumberId = DEFAULT_PHONE_ID;
   const recipient = cleanPhoneNumber(to);
 
   if (!token || !phoneNumberId || token.startsWith('mock-')) {
@@ -106,8 +112,8 @@ export async function sendWhatsAppDocumentMessage({
   fileName,
   caption,
 }: WhatsAppDocumentMessageParams): Promise<WhatsAppResponse> {
-  const token = process.env.META_WHATSAPP_TOKEN;
-  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+  const token = DEFAULT_TOKEN;
+  const phoneNumberId = DEFAULT_PHONE_ID;
   const recipient = cleanPhoneNumber(to);
 
   if (!token || !phoneNumberId || token.startsWith('mock-')) {
