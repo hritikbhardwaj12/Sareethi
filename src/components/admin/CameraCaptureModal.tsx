@@ -1,21 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, RefreshCw, X, Check, Upload, AlertCircle, Plus } from 'lucide-react';
-import { useStoreData } from '@/context/StoreDataContext';
+import { Camera, RefreshCw, X, Check, Upload, AlertCircle } from 'lucide-react';
 
 interface CameraCaptureModalProps {
   onClose: () => void;
-  onSelectProduct: (product: {
-    product_id: string;
-    product_name: string;
-    unit_price: number;
-    captured_image_url: string;
-  }) => void;
+  onSelectImage: (imageUrl: string) => void;
 }
 
-export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureModalProps) {
-  const { products } = useStoreData();
+export function CameraCaptureModal({ onClose, onSelectImage }: CameraCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -23,11 +16,6 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-
-  // Manual Item Inputs
-  const [productName, setProductName] = useState('');
-  const [productPrice, setProductPrice] = useState('');
-  const [selectedSKU, setSelectedSKU] = useState('');
 
   // Start device camera on mount
   useEffect(() => {
@@ -103,53 +91,32 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
     setCapturedImage(null);
   };
 
-  const handleQuickPick = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const prodId = e.target.value;
-    setSelectedSKU(prodId);
-    if (!prodId) return;
-    const prod = products.find((p) => p.id === prodId);
-    if (prod) {
-      setProductName(prod.name);
-      setProductPrice(prod.selling_price.toString());
+  const handleConfirmUse = () => {
+    if (capturedImage) {
+      onSelectImage(capturedImage);
+      onClose();
     }
-  };
-
-  const handleConfirmAdd = () => {
-    if (!productName.trim() || !productPrice) {
-      alert('Please enter a product description and price.');
-      return;
-    }
-
-    onSelectProduct({
-      product_id: selectedSKU || `ITEM-${Math.floor(1000 + Math.random() * 9000)}`,
-      product_name: productName.trim(),
-      unit_price: parseFloat(productPrice) || 0,
-      captured_image_url:
-        capturedImage ||
-        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-    });
-    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl flex flex-col">
         {/* Modal Header */}
         <div className="p-4 bg-purple-950 text-white flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-amber-400" />
-            <h3 className="font-serif text-lg font-bold">Physical Garment Photo Capture</h3>
+            <h3 className="font-serif text-lg font-bold">Snap Garment Photo</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-purple-200 hover:text-white hover:bg-purple-900 transition-colors"
+            className="p-1 rounded-lg text-purple-200 hover:text-white hover:bg-purple-900 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body Viewport */}
-        <div className="p-5 overflow-y-auto space-y-4 flex-1">
+        {/* Viewfinder / Preview */}
+        <div className="p-5 space-y-4">
           {!capturedImage ? (
             <div className="space-y-4">
               {/* Camera Viewfinder */}
@@ -169,7 +136,7 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
                   </div>
                 )}
 
-                {/* Shutter Overlay Button */}
+                {/* Shutter Button */}
                 {!cameraError && (
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                     <button
@@ -183,10 +150,10 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
                 )}
               </div>
 
-              {/* Hidden Canvas for Frame Grab */}
+              {/* Hidden Canvas */}
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* Alternative File / Device Camera Input */}
+              {/* Upload Alternative */}
               <div className="text-center pt-1">
                 <input
                   ref={fileInputRef}
@@ -201,73 +168,28 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
                   onClick={() => fileInputRef.current?.click()}
                   className="px-4 py-2 bg-purple-50 text-purple-950 border border-purple-200 rounded-xl text-xs font-semibold hover:bg-purple-100 flex items-center justify-center gap-2 mx-auto cursor-pointer"
                 >
-                  <Upload className="w-3.5 h-3.5" /> Or Upload / Select Photo From Device
+                  <Upload className="w-3.5 h-3.5" /> Or Choose Photo From Device
                 </button>
               </div>
             </div>
           ) : (
-            /* Image Preview & Manual Product Entry */
+            /* Captured Photo Preview */
             <div className="space-y-4 text-xs">
-              <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 max-h-48">
+              <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                 <img src={capturedImage} alt="Captured Garment" className="w-full h-full object-cover" />
                 <button
                   onClick={handleRetake}
-                  className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-black cursor-pointer"
+                  className="absolute top-3 right-3 px-3 py-1.5 bg-black/70 text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-black cursor-pointer shadow-md"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Retake Photo
+                  <RefreshCw className="w-3.5 h-3.5" /> Retake
                 </button>
               </div>
-
-              {/* Quick Select from existing catalog */}
-              <div>
-                <label className="block font-semibold text-gray-700 mb-1">Quick Select From Catalogue (Optional):</label>
-                <select
-                  value={selectedSKU}
-                  onChange={handleQuickPick}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none"
-                >
-                  <option value="">-- Custom Manual Entry --</option>
-                  {products
-                    .filter((p) => p.status !== 'DELETED')
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (₹{p.selling_price}) - {p.id}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Manual Product Name & Price */}
-              <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Product Description *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Silk Saree / Handloom Kurta"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Price (₹) *</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="1299"
-                    value={productPrice}
-                    onChange={(e) => setProductPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none font-bold text-sm"
-                  />
-                </div>
-              </div>
+              <p className="text-center text-gray-600 font-medium">Photo captured successfully!</p>
             </div>
           )}
         </div>
 
-        {/* Modal Footer Actions */}
+        {/* Actions */}
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
           <button
             type="button"
@@ -280,10 +202,10 @@ export function CameraCaptureModal({ onClose, onSelectProduct }: CameraCaptureMo
           {capturedImage && (
             <button
               type="button"
-              onClick={handleConfirmAdd}
+              onClick={handleConfirmUse}
               className="px-5 py-2 bg-purple-950 text-white text-xs font-bold rounded-xl hover:bg-purple-900 shadow-md flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> ADD ITEM TO BILL
+              <Check className="w-4 h-4 text-emerald-400" /> Use This Photo
             </button>
           )}
         </div>
