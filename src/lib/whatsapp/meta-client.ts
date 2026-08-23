@@ -63,7 +63,9 @@ export async function sendWhatsAppTextMessage({
 
   try {
     const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
-    const res = await fetch(url, {
+
+    // Attempt 1: Standard formatted text message
+    let res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -81,7 +83,33 @@ export async function sendWhatsAppTextMessage({
       }),
     });
 
-    const data = await res.json();
+    let data = await res.json();
+
+    // If Meta requires an active template (e.g. outside 24h window), send official template
+    if (!res.ok && (data.error?.code === 131047 || data.error?.message?.includes('template'))) {
+      console.log('[Meta WhatsApp] Outside 24hr window, sending pre-approved template fallback...');
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: recipient,
+          type: 'template',
+          template: {
+            name: 'hello_world',
+            language: {
+              code: 'en_US',
+            },
+          },
+        }),
+      });
+      data = await res.json();
+    }
+
     if (!res.ok) {
       console.error('[Meta WhatsApp API Error]', data);
       return {
