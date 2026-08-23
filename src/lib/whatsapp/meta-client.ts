@@ -1,7 +1,11 @@
 /**
- * Meta WhatsApp Cloud API Client
- * Sends automated transactional messages, PDF documents, and bulk promotional broadcasts.
+ * WhatsApp Multi-Channel Client (Twilio + Meta Cloud API)
+ * Sends automated background transactional messages, invoices, and promotional broadcasts.
  */
+
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || '+17372508034';
 
 export interface WhatsAppTextMessageParams {
   to: string;
@@ -35,95 +39,73 @@ function cleanPhoneNumber(phone: string): string {
   return digits;
 }
 
-const DEFAULT_TOKEN =
-  process.env.META_WHATSAPP_TOKEN ||
-  'EAAPOadgSZCp4BSYCsAg8f2LOZBIl2f3y0t4V2Nsvn2OgpYbvrsZAXqc4ZALhGZAPchg3ARm9tU6m0opLbRFUw2iGWDUbEx7Pm6tYxHdnRZAWW3cxMbmqIUluuQj8C9BIGYY1xgvjTjwsktkWtJ4Sl9R4xQG2VsEpxQ8pYryZAOK3EvsdmxFLdqEcTJaWkwsEF7scjm0ZArAcBVmIgR9ZAwMAlVVO52ERFFLwLckroziAWEtR9cOH6HZA2OHrwiSJg7BA55eNuU0jeN5qyma4vaj8vjDl2ZA7wZDZD';
-
-const DEFAULT_PHONE_ID = process.env.META_PHONE_NUMBER_ID || '1269767522888414';
-
 /**
- * Sends a text message to a WhatsApp number via Meta Cloud API.
+ * Sends a background WhatsApp message via Twilio Developer Sandbox.
  */
 export async function sendWhatsAppTextMessage({
   to,
   message,
 }: WhatsAppTextMessageParams): Promise<WhatsAppResponse> {
-  const token = DEFAULT_TOKEN;
-  const phoneNumberId = DEFAULT_PHONE_ID;
   const recipient = cleanPhoneNumber(to);
+  const formattedTo = `whatsapp:+${recipient}`;
+  const formattedFrom = `whatsapp:${TWILIO_FROM_NUMBER.startsWith('+') ? TWILIO_FROM_NUMBER : `+${TWILIO_FROM_NUMBER}`}`;
 
-  if (!token || !phoneNumberId || token.startsWith('mock-')) {
-    console.log(`[Meta WhatsApp Simulation] To: ${recipient}\nMessage:\n${message}`);
-    return {
-      success: true,
-      messageId: `sim_${Date.now()}`,
-      simulated: true,
-    };
-  }
+  console.log(`[Twilio WhatsApp Background Dispatch] To: ${formattedTo}`);
 
   try {
-    const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+    // Attempt 1: Standard message payload
+    const params = new URLSearchParams({
+      To: formattedTo,
+      From: formattedFrom,
+      Body: message,
+    });
 
-    // Attempt 1: Standard formatted text message
-    let res = await fetch(url, {
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+    let res = await fetch(twilioUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: recipient,
-        type: 'text',
-        text: {
-          preview_url: true,
-          body: message,
-        },
-      }),
+      body: params.toString(),
     });
 
     let data = await res.json();
 
-    // If Meta requires an active template (e.g. outside 24h window), send official template
-    if (!res.ok && (data.error?.code === 131047 || data.error?.message?.includes('template'))) {
-      console.log('[Meta WhatsApp] Outside 24hr window, sending pre-approved template fallback...');
-      res = await fetch(url, {
+    // If sandbox requires template ContentSid, dispatch pre-approved ContentSid
+    if (!res.ok && data.code === 21654) {
+      console.log('[Twilio Sandbox] ContentSid required, sending template handshake...');
+      const templateParams = new URLSearchParams({
+        To: formattedTo,
+        From: formattedFrom,
+        ContentSid: 'HXfe5ab5f00277942d4d4200328b4d403c',
+      });
+
+      res = await fetch(twilioUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: recipient,
-          type: 'template',
-          template: {
-            name: 'hello_world',
-            language: {
-              code: 'en_US',
-            },
-          },
-        }),
+        body: templateParams.toString(),
       });
       data = await res.json();
     }
 
     if (!res.ok) {
-      console.error('[Meta WhatsApp API Error]', data);
+      console.error('[Twilio WhatsApp Error]', data);
       return {
         success: false,
-        error: data.error?.message || 'Failed to send WhatsApp message via Meta Cloud API',
+        error: data.message || 'Failed to send WhatsApp message via Twilio',
       };
     }
 
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId: data.sid,
     };
   } catch (err: any) {
-    console.error('[Meta WhatsApp Network Error]', err);
+    console.error('[Twilio WhatsApp Network Error]', err);
     return {
       success: false,
       error: err.message,
@@ -132,7 +114,7 @@ export async function sendWhatsAppTextMessage({
 }
 
 /**
- * Sends a PDF document attachment via Meta WhatsApp Cloud API.
+ * Sends a document/invoice attachment via WhatsApp.
  */
 export async function sendWhatsAppDocumentMessage({
   to,
@@ -140,55 +122,41 @@ export async function sendWhatsAppDocumentMessage({
   fileName,
   caption,
 }: WhatsAppDocumentMessageParams): Promise<WhatsAppResponse> {
-  const token = DEFAULT_TOKEN;
-  const phoneNumberId = DEFAULT_PHONE_ID;
   const recipient = cleanPhoneNumber(to);
-
-  if (!token || !phoneNumberId || token.startsWith('mock-')) {
-    console.log(`[Meta WhatsApp Doc Simulation] To: ${recipient}, File: ${fileName}, URL: ${documentUrl}`);
-    return {
-      success: true,
-      messageId: `sim_doc_${Date.now()}`,
-      simulated: true,
-    };
-  }
+  const formattedTo = `whatsapp:+${recipient}`;
+  const formattedFrom = `whatsapp:${TWILIO_FROM_NUMBER.startsWith('+') ? TWILIO_FROM_NUMBER : `+${TWILIO_FROM_NUMBER}`}`;
 
   try {
-    const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
-    const res = await fetch(url, {
+    const params = new URLSearchParams({
+      To: formattedTo,
+      From: formattedFrom,
+      Body: caption || `Official Invoice: ${fileName}`,
+      MediaUrl: documentUrl,
+    });
+
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+    const res = await fetch(twilioUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: recipient,
-        type: 'document',
-        document: {
-          link: documentUrl,
-          filename: fileName,
-          caption: caption || '',
-        },
-      }),
+      body: params.toString(),
     });
 
     const data = await res.json();
     if (!res.ok) {
-      console.error('[Meta WhatsApp Doc API Error]', data);
       return {
         success: false,
-        error: data.error?.message || 'Failed to send document via Meta Cloud API',
+        error: data.message || 'Failed to send WhatsApp document',
       };
     }
 
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId: data.sid,
     };
   } catch (err: any) {
-    console.error('[Meta WhatsApp Doc Network Error]', err);
     return {
       success: false,
       error: err.message,
@@ -197,7 +165,7 @@ export async function sendWhatsAppDocumentMessage({
 }
 
 /**
- * Sends a promotional broadcast to a list of customer recipients.
+ * Sends a promotional broadcast to multiple customer recipients in the background.
  */
 export async function sendWhatsAppBroadcast({
   recipients,
@@ -231,7 +199,7 @@ export async function sendWhatsAppBroadcast({
       error: res.error,
     });
 
-    // Small throttling delay between messages
+    // Throttling interval
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
