@@ -19,13 +19,23 @@ import {
   Calendar,
   ExternalLink,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 
 export default function AdminOrdersPage() {
-  const { orders } = useStoreData();
+  const { orders, deleteOrder } = useStoreData();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'IN_TRANSIT' | 'DELIVERED'>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<StoreOrder | null>(null);
+
+  const handleDeleteOrder = async (orderId: string, customerName: string) => {
+    if (window.confirm(`Are you sure you want to delete order ${orderId} for "${customerName}"? This will void and remove the bill.`)) {
+      await deleteOrder(orderId);
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
+    }
+  };
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -155,15 +165,27 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="p-4 text-gray-500">{ord.date}</td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedOrder(ord);
-                          }}
-                          className="px-3 py-1.5 bg-purple-50 text-purple-950 hover:bg-purple-950 hover:text-white rounded-lg font-semibold text-[11px] transition-colors"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrder(ord);
+                            }}
+                            className="px-3 py-1.5 bg-purple-50 text-purple-950 hover:bg-purple-950 hover:text-white rounded-lg font-semibold text-[11px] transition-colors"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteOrder(ord.id, ord.customer_name);
+                            }}
+                            title="Delete Order / Void Bill"
+                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -236,12 +258,19 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-gray-100">
+            <div className="pt-3 flex justify-between items-center gap-3 border-t border-gray-100">
+              <button
+                onClick={() => handleDeleteOrder(selectedOrder.id, selectedOrder.customer_name)}
+                className="px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Order & Void Bill
+              </button>
+
               <button
                 onClick={() => setSelectedOrder(null)}
                 className="px-5 py-2.5 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md cursor-pointer"
               >
-                Close Order Details
+                Close Details
               </button>
             </div>
           </div>

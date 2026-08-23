@@ -446,6 +446,8 @@ interface StoreDataContextType {
 
   deleteProduct: (id: string) => Promise<{ success: boolean }>;
 
+  deleteOrder: (id: string) => Promise<{ success: boolean }>;
+
   createBill: (billInput: {
     customerName: string;
     customerPhone: string;
@@ -936,6 +938,29 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const deleteOrder = async (orderId: string) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    if (targetOrder?.bill_number) {
+      setBills((prev) =>
+        prev.filter((b) => b.billNumber !== targetOrder.bill_number && b.orderId !== orderId)
+      );
+    }
+
+    try {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'DELETE_ORDER',
+          payload: { orderId, billNumber: targetOrder?.bill_number },
+        }),
+      }).catch(() => {});
+    } catch (e) {}
+
+    return { success: true };
+  };
+
   const processReturn = async (returnInput: {
     billNumber: string;
     customerName: string;
@@ -1064,6 +1089,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         placeOrder,
         updateProduct,
         deleteProduct,
+        deleteOrder,
         createBill,
         processReturn,
         processApproval,

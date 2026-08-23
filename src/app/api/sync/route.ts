@@ -371,6 +371,12 @@ export async function POST(req: NextRequest) {
     } else if (action === 'PROCESS_APPROVAL') {
       const { id, decision } = payload;
       globalApprovals = globalApprovals.map((a) => (a.id === id ? { ...a, status: decision } : a));
+    } else if (action === 'DELETE_ORDER') {
+      const { orderId, billNumber } = payload;
+      globalOrders = globalOrders.filter((o) => o.id !== orderId);
+      if (billNumber) {
+        globalBills = globalBills.filter((b) => b.billNumber !== billNumber && b.orderId !== orderId);
+      }
     } else if (action === 'SYNC_ALL') {
       // Bulk merge incoming client state
       if (Array.isArray(payload.orders)) {
