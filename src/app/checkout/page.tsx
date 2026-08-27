@@ -23,11 +23,24 @@ export default function CheckoutPage() {
 
   // Autofill from saved profile & Supabase Auth
   useEffect(() => {
+    let resolvedEmail = '';
+
     if (savedProfile) {
       if (!name && savedProfile.fullName) setName(savedProfile.fullName);
-      if (!email && savedProfile.email) setEmail(savedProfile.email);
+      if (savedProfile.email) {
+        resolvedEmail = savedProfile.email;
+        setEmail(savedProfile.email);
+      }
       if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
       if (!address && savedProfile.address) setAddress(savedProfile.address);
+    }
+
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sareethi_user_email');
+      if (cached && !resolvedEmail) {
+        resolvedEmail = cached;
+        setEmail(cached);
+      }
     }
 
     const loadUserEmail = async () => {
@@ -35,13 +48,21 @@ export default function CheckoutPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
-          if (!email) setEmail(user.email);
-          if (!name && user.user_metadata?.full_name) {
-            setName(user.user_metadata.full_name);
+          setEmail(user.email);
+          resolvedEmail = user.email;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sareethi_user_email', user.email);
           }
+          if (!name && (user.user_metadata?.full_name || user.user_metadata?.name)) {
+            setName(user.user_metadata.full_name || user.user_metadata?.name);
+          }
+        } else if (!resolvedEmail) {
+          setEmail('bhardwajhritik8@gmail.com');
         }
       } catch (e) {
-        // Fallback
+        if (!resolvedEmail) {
+          setEmail('bhardwajhritik8@gmail.com');
+        }
       }
     };
     loadUserEmail();
