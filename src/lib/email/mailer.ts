@@ -1,3 +1,5 @@
+import nodemailer from 'nodemailer';
+
 export interface SendEmailOptions {
   to: string;
   subject: string;
@@ -214,9 +216,6 @@ export async function sendEmail(options: SendEmailOptions) {
 
   if (smtpHost && smtpUser && smtpPass) {
     try {
-      // Dynamic require so Next.js webpack does not fail if optional package nodemailer is omitted
-      const req = eval('require');
-      const nodemailer = req('nodemailer');
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: Number(process.env.SMTP_PORT) || 587,
@@ -233,6 +232,8 @@ export async function sendEmail(options: SendEmailOptions) {
         html,
       });
 
+      console.log(`[SMTP Live Dispatch Success] Sent email to ${to}, Message ID: ${info.messageId}`);
+
       return {
         success: true,
         messageId: info.messageId,
@@ -241,7 +242,7 @@ export async function sendEmail(options: SendEmailOptions) {
         recipient: to,
       };
     } catch (err: any) {
-      console.warn('[Mailer SMTP Fallback Triggered]', err?.message || err);
+      console.error('[SMTP Transport Error]', err?.message || err);
     }
   }
 
