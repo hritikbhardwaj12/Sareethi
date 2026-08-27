@@ -19,11 +19,13 @@ export default function AdminApprovalsPage() {
 
   const startEditing = (appr: any) => {
     setEditingId(appr.id);
-    setEditedMessage(appr.payload?.suggested_message || '');
+    const suggestedMsg = appr.details?.suggested_message || appr.payload?.suggested_message || '';
+    setEditedMessage(suggestedMsg);
+    const custName = appr.customer || appr.payload?.customer_name || '';
     const foundCust = customers.find(
-      (c) => c.name.toLowerCase() === (appr.payload?.customer_name || '').toLowerCase()
+      (c) => c.name.toLowerCase() === custName.toLowerCase()
     );
-    setEditedEmail(appr.payload?.customer_email || foundCust?.email || 'customer@example.com');
+    setEditedEmail(appr.email || appr.payload?.customer_email || foundCust?.email || 'customer@example.com');
   };
 
   const handleDecision = (id: string, decision: 'APPROVED' | 'EDITED' | 'REJECTED', customMsg?: string, customEmail?: string) => {
@@ -34,16 +36,15 @@ export default function AdminApprovalsPage() {
       await processApproval(id, decision);
 
       // 2. Automated Email Follow-Up Delivery if approved or edited & approved
-      if ((decision === 'APPROVED' || decision === 'EDITED') &&
-          (targetApproval?.type === 'CUSTOMER_FOLLOWUP' || targetApproval?.type === 'DELAY_ACTION')) {
-        const customer = targetApproval.payload?.customer_name || 'Customer';
-        const msg = customMsg || editedMessage || targetApproval.payload?.suggested_message;
+      if (decision === 'APPROVED' || decision === 'EDITED') {
+        const customer = customEmail ? 'Valued Customer' : (targetApproval?.customer || targetApproval?.payload?.customer_name || 'Customer');
+        const msg = customMsg || editedMessage || targetApproval?.details?.suggested_message || targetApproval?.payload?.suggested_message || 'Thank you for shopping at Sareethi!';
 
-        // Lookup customer email from payload or context
+        // Lookup customer email from ticket, payload, or context
         const foundCust = customers.find(
           (c) => c.name.toLowerCase() === customer.toLowerCase()
         );
-        const email = customEmail || editedEmail || targetApproval.payload?.customer_email || foundCust?.email || 'customer@example.com';
+        const email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || 'customer@example.com';
 
         try {
           const res = await fetch('/api/email/send', {
@@ -61,11 +62,15 @@ export default function AdminApprovalsPage() {
           });
           const data = await res.json();
           if (data.success) {
-            setToastMessage(`📧 Follow-up email successfully sent to ${email}`);
-            setTimeout(() => setToastMessage(null), 5000);
+            setToastMessage(`📧 Follow-up email successfully delivered to ${email}!`);
+            setTimeout(() => setToastMessage(null), 6000);
+          } else {
+            setToastMessage(`❌ Email Error: ${data.error || 'Failed to deliver email'}`);
+            setTimeout(() => setToastMessage(null), 8000);
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('Failed to send follow-up email:', e);
+          setToastMessage(`❌ Network Error: ${e.message}`);
         }
       }
 
@@ -151,38 +156,33 @@ export default function AdminApprovalsPage() {
                         >
                           Risk: {appr.risk}
                         </span>
-                        <span className="text-xs text-gray-400">{appr.date}</span>
+                        <span className="text-xs text-gray-400">{appr.date || appr.created_at}</span>
                       </div>
                       <h3 className="font-serif text-lg font-bold text-gray-900">{appr.title}</h3>
                     </div>
 
                     {/* Delivery Channel Badges */}
-                    {(appr.type === 'CUSTOMER_FOLLOWUP' || appr.type === 'DELAY_ACTION') && (
-                      <div className="flex items-center gap-2">
-                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-emerald-600" /> Email: Active
-                        </span>
-                        <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
-                          💬 WhatsApp: Planned
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <Mail className="w-3 h-3 text-emerald-600" /> Email Follow-Up: Active
+                      </span>
+                    </div>
                   </div>
 
                   {/* Payload Content Preview & Inline Editor */}
                   <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-3 border border-gray-100">
-                    {appr.payload?.suggested_message && !isEditingThis && (
+                    {(appr.details?.suggested_message || appr.payload?.suggested_message) && !isEditingThis && (
                       <div className="space-y-1">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center flex-wrap gap-2">
                           <span className="font-semibold text-gray-700 flex items-center gap-1">
                             <MessageSquare className="w-3.5 h-3.5 text-purple-950" /> Suggested Customer Message:
                           </span>
                           <span className="text-gray-500 text-[11px]">
-                            Recipient Email: <strong className="text-purple-950">{defaultTargetEmail}</strong>
+                            Recipient Email: <strong className="text-purple-950">{appr.email || defaultTargetEmail}</strong>
                           </span>
                         </div>
                         <p className="italic text-gray-800 bg-white p-3 rounded border border-gray-200">
-                          "{appr.payload.suggested_message}"
+                          "{appr.details?.suggested_message || appr.payload?.suggested_message}"
                         </p>
                       </div>
                     )}
