@@ -81,37 +81,6 @@ export default function AdminApprovalsPage() {
     });
   };
 
-  const sendTestEmail = async () => {
-    const targetEmail = prompt('Enter your Gmail address to receive a live test email:', 'hritikbhardwaj12@gmail.com');
-    if (!targetEmail) return;
-
-    setToastMessage(`⏳ Sending test email to ${targetEmail}...`);
-
-    try {
-      const res = await fetch('/api/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'SEND_WELCOME',
-          payload: {
-            to: targetEmail,
-            userName: 'Store Owner',
-            subject: 'Sareethi Live SMTP Email Diagnostic Test',
-          },
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setToastMessage(`✅ LIVE EMAIL SENT SUCCESSFULLY! Check inbox / spam folder of ${targetEmail}`);
-      } else {
-        setToastMessage(`❌ Email Error: ${data.error || data.result?.error || 'Unknown error'}`);
-      }
-    } catch (err: any) {
-      setToastMessage(`❌ Network Error: ${err.message}`);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <AdminHeader />
@@ -145,12 +114,6 @@ export default function AdminApprovalsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={sendTestEmail}
-              className="bg-amber-500 hover:bg-amber-400 text-purple-950 font-bold text-xs px-3.5 py-2 rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <Mail className="w-4 h-4" /> 🧪 Test Live Email
-            </button>
             <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-2 rounded-xl font-bold">
               {pendingApprovals.length} Pending Actions
             </span>

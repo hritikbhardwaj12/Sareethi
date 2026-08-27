@@ -405,6 +405,12 @@ interface StoreDataContextType {
 
   deleteOrder: (id: string) => Promise<{ success: boolean }>;
 
+  updateOrderStatus: (
+    orderId: string,
+    newStatus: 'CONFIRMED' | 'PROCESSING' | 'IN_TRANSIT' | 'DELIVERED',
+    trackingNumber?: string
+  ) => Promise<{ success: boolean; approvalId?: string }>;
+
   createBill: (billInput: {
     customerName: string;
     customerPhone: string;
@@ -708,6 +714,71 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     } catch (e) {}
 
     return { success: true, orderId };
+  };
+
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: 'CONFIRMED' | 'PROCESSING' | 'IN_TRANSIT' | 'DELIVERED',
+    trackingNumber?: string
+  ) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+
+    let statusLabel = 'Confirmed & Processing';
+    if (newStatus === 'PROCESSING') statusLabel = 'Processing & Tailoring';
+    if (newStatus === 'IN_TRANSIT') statusLabel = 'In Transit';
+    if (newStatus === 'DELIVERED') statusLabel = 'Delivered';
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: newStatus,
+              status_label: statusLabel,
+              tracking_number: trackingNumber || o.tracking_number || `IND-EXP-${Math.floor(100000 + Math.random() * 900000)}`,
+            }
+          : o
+      )
+    );
+
+    const custName = targetOrder?.customer_name || 'Customer';
+    const approvalId = `APPR-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    let category = 'ORDER_PROCESSING';
+    let title = `Order Processing Follow-Up: ${custName} (${orderId})`;
+    let message = `Hi ${custName}, great news! Your Sareethi order (${orderId}) is now being tailored and quality-checked at our workshop. We are preparing it for shipment!`;
+
+    if (newStatus === 'IN_TRANSIT') {
+      category = 'ORDER_SHIPPED';
+      title = `Order Shipped & In Transit Notification: ${custName} (${orderId})`;
+      const trackId = trackingNumber || targetOrder?.tracking_number || `IND-EXP-${Math.floor(100000 + Math.random() * 900000)}`;
+      message = `Hi ${custName}, your Sareethi package (${orderId}) has been dispatched and is currently in transit! Tracking ID: ${trackId}. Track live online: https://sareethi.vercel.app/orders`;
+    } else if (newStatus === 'DELIVERED') {
+      category = 'ORDER_DELIVERED';
+      title = `Delivered Order Feedback & Reward: ${custName} (${orderId})`;
+      message = `Hi ${custName}, your Sareethi order (${orderId}) has been delivered! We hope you love your new outfit. Share your look with us & enjoy 10% OFF your next order with voucher code: LOVE10!`;
+    }
+
+    // Auto-generate AI Level 2 Recommendation in Approval Queue
+    const newApproval: StoreApproval = {
+      id: approvalId,
+      category,
+      risk: 'LOW_RISK',
+      title,
+      customer: custName,
+      email: targetOrder?.customer_phone ? `${custName.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'customer@gmail.com',
+      details: {
+        order_id: orderId,
+        suggested_message: message,
+        status_event: newStatus,
+      },
+      status: 'PENDING',
+      created_at: 'Just Now',
+    };
+
+    setApprovals((prev) => [newApproval, ...prev]);
+
+    return { success: true, approvalId };
   };
 
   const updateProduct = async (id: string, updates: Partial<StoreProduct>) => {
@@ -1052,6 +1123,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         updateProduct,
         deleteProduct,
         deleteOrder,
+        updateOrderStatus,
         createBill,
         processReturn,
         processApproval,

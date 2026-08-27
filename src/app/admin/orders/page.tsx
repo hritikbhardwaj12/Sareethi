@@ -23,10 +23,27 @@ import {
 } from 'lucide-react';
 
 export default function AdminOrdersPage() {
-  const { orders, deleteOrder } = useStoreData();
+  const { orders, deleteOrder, updateOrderStatus } = useStoreData();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'IN_TRANSIT' | 'DELIVERED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'PROCESSING' | 'IN_TRANSIT' | 'DELIVERED'>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<StoreOrder | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleStatusChange = async (orderId: string, newStatus: 'CONFIRMED' | 'PROCESSING' | 'IN_TRANSIT' | 'DELIVERED') => {
+    let trackingPrompt = '';
+    if (newStatus === 'IN_TRANSIT') {
+      trackingPrompt = prompt('Enter Courier Tracking Number (optional):', `IND-EXP-${Math.floor(100000 + Math.random() * 900000)}`) || '';
+    }
+
+    const res = await updateOrderStatus(orderId, newStatus, trackingPrompt);
+    if (res.success) {
+      setToastMessage(`✨ Order ${orderId} status set to ${newStatus}! AI Follow-up draft added to Approvals.`);
+      setTimeout(() => setToastMessage(null), 5000);
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) => prev ? { ...prev, status: newStatus, status_label: newStatus } : null);
+      }
+    }
+  };
 
   const handleDeleteOrder = async (orderId: string, customerName: string) => {
     if (window.confirm(`Are you sure you want to delete order ${orderId} for "${customerName}"? This will void and remove the bill.`)) {
@@ -51,6 +68,21 @@ export default function AdminOrdersPage() {
       <AdminHeader />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Toast Alert */}
+        {toastMessage && (
+          <div className="bg-purple-950 text-white px-6 py-4 rounded-2xl shadow-xl border border-purple-800 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
+              <p className="text-sm font-semibold">{toastMessage}</p>
+            </div>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="text-amber-400 hover:text-white font-bold text-xs cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {/* Header */}
         <div className="bg-purple-950 text-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -216,8 +248,8 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            {/* Status Card */}
-            <div className="p-4 bg-purple-50/70 rounded-xl space-y-2 text-xs border border-purple-100">
+            {/* Status Card & Actions */}
+            <div className="p-4 bg-purple-50/70 rounded-xl space-y-3 text-xs border border-purple-100">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-semibold">Current Status:</span>
                 <span className="font-bold text-purple-950 bg-white px-2.5 py-1 rounded-md border border-purple-200">
@@ -228,6 +260,32 @@ export default function AdminOrdersPage() {
                 <span className="text-gray-600 font-semibold">Contact Phone:</span>
                 <span className="font-bold text-gray-900">{selectedOrder.customer_phone || 'Not provided'}</span>
               </div>
+
+              {/* Update Status Actions (Triggers AI Level 2 Follow-up) */}
+              <div className="pt-2 border-t border-purple-100 space-y-1.5">
+                <span className="text-[11px] font-bold text-purple-950 uppercase tracking-wider block">Update Status & Queue AI Follow-Up:</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => handleStatusChange(selectedOrder.id, 'PROCESSING')}
+                    className="px-2.5 py-1.5 bg-purple-900 text-white font-bold text-[11px] rounded-lg hover:bg-purple-950 cursor-pointer shadow-xs"
+                  >
+                    ⚙️ Processing
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(selectedOrder.id, 'IN_TRANSIT')}
+                    className="px-2.5 py-1.5 bg-amber-600 text-white font-bold text-[11px] rounded-lg hover:bg-amber-700 cursor-pointer shadow-xs"
+                  >
+                    🚚 In Transit
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(selectedOrder.id, 'DELIVERED')}
+                    className="px-2.5 py-1.5 bg-emerald-600 text-white font-bold text-[11px] rounded-lg hover:bg-emerald-700 cursor-pointer shadow-xs"
+                  >
+                    ✅ Delivered
+                  </button>
+                </div>
+              </div>
+
               {selectedOrder.shipping_address && (
                 <div className="pt-2 border-t border-purple-100">
                   <span className="text-gray-600 font-semibold block mb-0.5">Shipping / Delivery Address:</span>
