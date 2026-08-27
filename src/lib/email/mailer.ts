@@ -210,7 +210,7 @@ export async function sendEmail(options: SendEmailOptions) {
   // Check for external SMTP environment variables
   const smtpHost = process.env.SMTP_HOST;
   const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const smtpPass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : undefined;
 
   if (smtpHost && smtpUser && smtpPass) {
     try {
@@ -220,12 +220,14 @@ export async function sendEmail(options: SendEmailOptions) {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
+        secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
         auth: { user: smtpUser, pass: smtpPass },
       });
 
+      const sender = process.env.EMAIL_FROM || `"Sareethi Fashion" <${smtpUser}>`;
+
       const info = await transporter.sendMail({
-        from: process.env.EMAIL_FROM || '"Sareethi Fashion" <noreply@sareethi.com>',
+        from: sender,
         to,
         subject,
         html,

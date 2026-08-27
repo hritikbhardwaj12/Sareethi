@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email/mailer';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,23 +11,17 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Send automated Welcome Email on signup
+      // Direct automated Welcome Email dispatch on signup
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
           const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
-          await fetch(`${origin}/api/email/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'SEND_WELCOME',
-              payload: {
-                to: user.email,
-                userName: name,
-                subject: `Welcome to Sareethi Fashion — 10% OFF Voucher Inside!`,
-              },
-            }),
-          }).catch((err) => console.warn('Welcome Email trigger warning:', err));
+          await sendEmail({
+            to: user.email,
+            subject: 'Welcome to Sareethi Fashion — 10% OFF Voucher Inside!',
+            customerName: name,
+            type: 'WELCOME',
+          });
         }
       } catch (welcomeErr) {
         console.warn('Welcome Email dispatch error:', welcomeErr);
