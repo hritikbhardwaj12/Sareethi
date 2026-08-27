@@ -1,5 +1,4 @@
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
-import { SignupForm } from '@/components/auth/SignupForm';
 
 export default function LoginPage() {
   return (
@@ -15,23 +14,16 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pt-2">
           <GoogleAuthButton label="Continue with Google" />
-          
-          <div className="flex items-center gap-3 my-2">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">or sign up with email</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          <SignupForm />
         </div>
 
-        <p className="text-[11px] text-gray-400 pt-2 border-t border-gray-100">
-          By signing in, you access Sareethi Storefront & Admin Portal. Welcome emails are automatically dispatched upon registration.
+        <p className="text-[11px] text-gray-400 pt-4 border-t border-gray-100">
+          Sign in with Google to access Sareethi Storefront & Admin Portal. First-time signups automatically receive a welcome email with a 10% OFF voucher!
         </p>
       </div>
     </main>
   );
 }
+
 
