@@ -5,7 +5,11 @@ export interface SendEmailOptions {
   subject: string;
   customerName?: string;
   messageText?: string;
-  type?: 'FOLLOWUP' | 'WELCOME' | 'CUSTOM';
+  orderId?: string;
+  items?: Array<{ name: string; price: number; quantity: number; image?: string; size?: string }>;
+  totalPrice?: number;
+  shippingAddress?: string;
+  type?: 'FOLLOWUP' | 'WELCOME' | 'ORDER_INVOICE' | 'CUSTOM';
 }
 
 export function renderFollowupEmailHtml(customerName: string, messageText: string): string {
@@ -370,18 +374,6 @@ export function renderOrderInvoiceEmailHtml(
 </body>
 </html>
   `.trim();
-}
-
-export interface SendEmailOptions {
-  to: string;
-  subject: string;
-  customerName?: string;
-  messageText?: string;
-  orderId?: string;
-  items?: Array<{ name: string; price: number; quantity: number; image?: string; size?: string }>;
-  totalPrice?: number;
-  shippingAddress?: string;
-  type?: 'FOLLOWUP' | 'WELCOME' | 'ORDER_INVOICE' | 'CUSTOM';
 }
 
 export async function sendEmail(options: SendEmailOptions) {
