@@ -168,21 +168,6 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Email Address (For Bill & Receipt Email)</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none bg-purple-50/20"
-                    placeholder="yourname@gmail.com"
-                  />
-                  <span className="text-[10px] text-purple-900 mt-0.5 block font-medium">
-                    📧 Official order receipt, bill, and 5% OFF discount voucher will be sent to this email.
-                  </span>
-                </div>
-
-                <div>
                   <label className="block font-semibold text-gray-700 mb-1">Phone Number (For Updates)</label>
                   <input
                     type="tel"
