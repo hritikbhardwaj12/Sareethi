@@ -65,9 +65,10 @@ export default function CheckoutPage() {
         // Fallback gracefully
       }
 
-      // 3. Place order in data store
+      // 3. Place order in data store with customer email
       const res = await placeOrder({
         customerName: name.trim(),
+        customerEmail: email.trim(),
         customerPhone: phone.trim(),
         deliveryAddress: address.trim(),
         items: items.map((it) => ({
@@ -163,6 +164,21 @@ export default function CheckoutPage() {
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
                     placeholder="Enter your full name"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Email Address (For Bill & Order Receipts)</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
+                    placeholder="yourname@gmail.com"
+                  />
+                  <span className="text-[10px] text-gray-500 mt-0.5 block">
+                    📧 Order confirmation receipt, invoice bill, and 5% OFF voucher will be sent to this email.
+                  </span>
                 </div>
 
                 <div>
