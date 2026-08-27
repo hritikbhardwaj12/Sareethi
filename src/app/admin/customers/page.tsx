@@ -191,19 +191,19 @@ export default function AdminCustomersPage() {
                   <div className="grid grid-cols-4 gap-2 text-xs pt-2 border-t border-gray-100">
                     <div>
                       <span className="text-[10px] text-gray-400 block">Orders</span>
-                      <span className="font-bold text-gray-900">{cust.total_orders}</span>
+                      <span className="font-bold text-gray-900">{cust.total_orders || 0}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block">Lifetime Spend</span>
-                      <span className="font-bold text-gray-900">₹{cust.total_spent.toLocaleString()}</span>
+                      <span className="font-bold text-gray-900">₹{(cust.total_spent || 0).toLocaleString()}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block">Avg Order (AOV)</span>
-                      <span className="font-bold text-gray-900">₹{cust.aov.toLocaleString()}</span>
+                      <span className="font-bold text-gray-900">₹{(cust.aov || 0).toLocaleString()}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block">Days Inactive</span>
-                      <span className="font-bold text-rose-600">{cust.days_inactive} days</span>
+                      <span className="font-bold text-rose-600">{cust.days_inactive || 0} days</span>
                     </div>
                   </div>
                 </div>
