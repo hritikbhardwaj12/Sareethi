@@ -616,6 +616,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
   const placeOrder = async (orderInput: {
     customerName: string;
+    customerEmail?: string;
     customerPhone: string;
     deliveryAddress: string;
     items: {
