@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, Search, User, Menu, X, ArrowRight, Package } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { SareethiLogo } from '@/components/ui/SareethiLogo';
 
 export function Header() {
   const { totalItems, isOpen, setIsOpen, items, removeItem, updateQuantity, totalAmount } = useCart();
@@ -22,7 +23,7 @@ export function Header() {
               <Menu className="w-5 h-5" />
             </button>
             <Link href="/" className="flex items-center gap-2">
-              <span className="font-serif text-2xl font-bold text-purple-950 tracking-tight">Sareethi</span>
+              <SareethiLogo size="sm" showText={true} />
             </Link>
           </div>
 
@@ -65,7 +66,7 @@ export function Header() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
           <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl z-50 flex flex-col p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <span className="font-serif text-2xl font-bold text-purple-950">Sareethi</span>
+              <SareethiLogo size="sm" showText={true} />
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-gray-700">
                 <X className="w-5 h-5" />
               </button>

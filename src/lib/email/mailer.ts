@@ -117,7 +117,7 @@ export function renderWelcomeEmailHtml(userName: string): string {
           <!-- Brand Header -->
           <tr>
             <td style="background-color: #2e0229; padding: 36px 24px; text-align: center;">
-              <div style="display: inline-block; background-color: #f59e0b; color: #2e0229; font-weight: bold; width: 44px; height: 44px; line-height: 44px; border-radius: 50%; font-size: 22px; margin-bottom: 12px;">
+              <div style="display: inline-block; background-color: #2e0229; border: 2px solid #4a0a43; color: #f59e0b; font-weight: bold; width: 48px; height: 48px; line-height: 48px; border-radius: 14px; font-size: 26px; margin-bottom: 12px; font-family: Georgia, serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                 S
               </div>
               <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 1.5px;">

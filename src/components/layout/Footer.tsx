@@ -1,11 +1,14 @@
 import Link from 'next/link';
+import { SareethiLogo } from '@/components/ui/SareethiLogo';
 
 export function Footer() {
   return (
     <footer className="bg-purple-950 text-purple-100 border-t border-purple-900 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
-          <h3 className="font-serif text-2xl font-bold text-white mb-3">Sareethi</h3>
+          <div className="mb-3">
+            <SareethiLogo size="md" showText={true} textColor="light" />
+          </div>
           <p className="text-xs text-purple-200 leading-relaxed">
             AI-operated fashion retail operating platform. Beautiful sarees, suits, and ethnic wear curated for modern elegance.
           </p>

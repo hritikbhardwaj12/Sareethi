@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Shield, RotateCcw, AlertTriangle, Users, AlertOctagon, Cpu, Package } from 'lucide-react';
+import { SareethiLogo } from '@/components/ui/SareethiLogo';
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -24,7 +25,7 @@ export function AdminHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <span className="font-serif text-2xl font-bold tracking-tight text-white">Sareethi</span>
+            <SareethiLogo size="sm" showText={true} textColor="light" />
             <span className="bg-amber-400 text-purple-950 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">
               ADMIN
             </span>
