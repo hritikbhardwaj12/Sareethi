@@ -216,13 +216,20 @@ export async function sendEmail(options: SendEmailOptions) {
 
   if (smtpHost && smtpUser && smtpPass) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-      });
+      const isGmail = smtpHost.toLowerCase().includes('gmail');
+      const transporterConfig: any = isGmail
+        ? {
+            service: 'gmail',
+            auth: { user: smtpUser, pass: smtpPass },
+          }
+        : {
+            host: smtpHost,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
+            auth: { user: smtpUser, pass: smtpPass },
+          };
 
+      const transporter = nodemailer.createTransport(transporterConfig);
       const sender = process.env.EMAIL_FROM || `"Sareethi Fashion" <${smtpUser}>`;
 
       const info = await transporter.sendMail({
@@ -242,19 +249,25 @@ export async function sendEmail(options: SendEmailOptions) {
         recipient: to,
       };
     } catch (err: any) {
-      console.error('[SMTP Transport Error]', err?.message || err);
+      console.error('[SMTP Transport Failure]', err?.message || err);
+      return {
+        success: false,
+        error: err?.message || 'SMTP Authentication / Transport Error',
+        channel: 'EMAIL',
+        mode: 'SMTP_FAILED',
+        recipient: to,
+      };
     }
   }
 
-  // Graceful simulated delivery (log to output & return active status)
-  console.log(`[EMAIL DISPATCH - ${type}] Sent to: ${to} | Subject: ${subject}`);
+  // Fallback when environment variables are not set on server
+  console.log(`[ENV MISSING] SMTP_HOST/USER/PASS missing on server. Sent to: ${to}`);
 
   return {
-    success: true,
-    messageId: `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    success: false,
+    error: 'Vercel Environment Variables (SMTP_HOST, SMTP_USER, SMTP_PASS) not detected on server. Please redeploy Vercel project.',
     channel: 'EMAIL',
-    mode: 'SIMULATED_DISPATCH',
+    mode: 'ENV_VARIABLES_MISSING',
     recipient: to,
-    previewHtmlSnippet: html.slice(0, 200),
   };
 }

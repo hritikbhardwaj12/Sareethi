@@ -81,6 +81,37 @@ export default function AdminApprovalsPage() {
     });
   };
 
+  const sendTestEmail = async () => {
+    const targetEmail = prompt('Enter your Gmail address to receive a live test email:', 'hritikbhardwaj12@gmail.com');
+    if (!targetEmail) return;
+
+    setToastMessage(`⏳ Sending test email to ${targetEmail}...`);
+
+    try {
+      const res = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'SEND_WELCOME',
+          payload: {
+            to: targetEmail,
+            userName: 'Store Owner',
+            subject: 'Sareethi Live SMTP Email Diagnostic Test',
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setToastMessage(`✅ LIVE EMAIL SENT SUCCESSFULLY! Check inbox / spam folder of ${targetEmail}`);
+      } else {
+        setToastMessage(`❌ Email Error: ${data.error || data.result?.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      setToastMessage(`❌ Network Error: ${err.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <AdminHeader />
@@ -88,14 +119,14 @@ export default function AdminApprovalsPage() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Toast Alert */}
         {toastMessage && (
-          <div className="bg-emerald-900 text-emerald-100 px-6 py-4 rounded-2xl shadow-xl border border-emerald-700 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-purple-950 text-white px-6 py-4 rounded-2xl shadow-xl border border-purple-800 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
               <p className="text-sm font-semibold">{toastMessage}</p>
             </div>
             <button
               onClick={() => setToastMessage(null)}
-              className="text-emerald-300 hover:text-white font-bold text-xs"
+              className="text-amber-400 hover:text-white font-bold text-xs"
             >
               Dismiss
             </button>
@@ -113,9 +144,17 @@ export default function AdminApprovalsPage() {
               Store Owner Review Portal: Review AI recommendations for customer follow-ups, delayed order exceptions, and low-confidence product classifications.
             </p>
           </div>
-          <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-1.5 rounded-full font-bold">
-            {pendingApprovals.length} Pending Actions
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={sendTestEmail}
+              className="bg-amber-500 hover:bg-amber-400 text-purple-950 font-bold text-xs px-3.5 py-2 rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Mail className="w-4 h-4" /> 🧪 Test Live Email
+            </button>
+            <span className="bg-purple-900 border border-purple-700 text-purple-200 font-mono text-[11px] px-3 py-2 rounded-xl font-bold">
+              {pendingApprovals.length} Pending Actions
+            </span>
+          </div>
         </div>
 
         {/* Approval Queue Items */}

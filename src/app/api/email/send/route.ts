@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({
-        success: true,
+        success: result.success,
+        error: result.error,
         channel: 'EMAIL',
         recipient,
         result,
@@ -40,7 +41,8 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({
-        success: true,
+        success: result.success,
+        error: result.error,
         channel: 'EMAIL',
         recipient,
         result,
