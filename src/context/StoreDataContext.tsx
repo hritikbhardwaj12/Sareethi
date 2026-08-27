@@ -240,56 +240,7 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
   },
 ];
 
-const INITIAL_ORDERS: StoreOrder[] = [
-  {
-    id: 'ORD-1028',
-    customer_id: 'CUST-00101',
-    customer_name: 'Priya Sharma',
-    customer_phone: '9876543210',
-    shipping_address: 'Flat 402, Lotus Residency, MG Road, Bangalore, 560001',
-    total_price: 1299,
-    status: 'IN_TRANSIT',
-    status_label: 'In Transit (Expected Today)',
-    date: '20 Aug 2026',
-    created_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-    tracking_number: 'BLR-EXP-9921',
-    bill_number: 'INV-20260820-0042',
-    items: [
-      {
-        id: 'SAR-00001',
-        name: 'Pink Pochampally Ikkat Chiffon Saree With Unstitched Blouse Piece',
-        price: 1299,
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-        size: 'ONESIZE',
-      },
-    ],
-  },
-  {
-    id: 'ORD-1014',
-    customer_id: 'CUST-00102',
-    customer_name: 'Anita Roy',
-    customer_phone: '9812345678',
-    shipping_address: 'B-12 Sector 4, Salt Lake, Kolkata, 700064',
-    total_price: 1899,
-    status: 'DELIVERED',
-    status_label: 'Delivered',
-    date: '12 Aug 2026',
-    created_at: new Date(Date.now() - 11 * 24 * 3600 * 1000).toISOString(),
-    tracking_number: 'KOL-DLV-4412',
-    bill_number: 'INV-20260812-0019',
-    items: [
-      {
-        id: 'SUIT-00001',
-        name: 'Royal Blue Straight Chanderi Silk Suit Set With Dupatta',
-        price: 1899,
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
-        size: 'M',
-      },
-    ],
-  },
-];
+const INITIAL_ORDERS: StoreOrder[] = [];
 
 const INITIAL_CUSTOMERS: StoreCustomer[] = [
   {
@@ -519,7 +470,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       if (saved) {
         localSaved = JSON.parse(saved);
         if (localSaved.products && Array.isArray(localSaved.products)) setProducts(localSaved.products);
-        if (localSaved.orders && Array.isArray(localSaved.orders)) setOrders(localSaved.orders);
+        if (localSaved.orders && Array.isArray(localSaved.orders)) {
+          const cleanOrders = localSaved.orders.filter(
+            (o: StoreOrder) => o.id !== 'ORD-1014' && o.id !== 'ORD-1028' && o.id !== 'ORD-1639'
+          );
+          setOrders(cleanOrders);
+        }
         if (localSaved.customers && Array.isArray(localSaved.customers)) setCustomers(localSaved.customers);
         if (localSaved.bills && Array.isArray(localSaved.bills)) setBills(localSaved.bills);
         if (localSaved.returns && Array.isArray(localSaved.returns)) setReturns(localSaved.returns);
