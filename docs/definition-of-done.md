@@ -15,19 +15,19 @@ This document establishes the formal **Definition of Done** checklist for **Sare
 - [x] Complete `docs/` suite created: `product-spec.md`, `architecture.md`, `workflows.md`, `privacy.md`, `security.md`, `definition-of-done.md`.
 
 ### 2. Core Functional Capabilities
-- [ ] **Mobile-First Customer Storefront**: Responsive UI, Saree/Suit categories, PDP multi-image galleries, attribute filters (color, fabric, occasion, style).
-- [ ] **Catalogue Processing Engine**: Supports PDF, image, and video ingestion without requiring Excel/CSV files.
-- [ ] **Product Detection & Multi-Photo Grouping**: Merges multiple shots of the same saree into a single product gallery.
-- [ ] **Duplicate Detection**: Filters exact duplicate images and identifies similar garments cleanly.
-- [ ] **Attribute & Price Extraction**: Extracts fabric, color, pattern, occasion, blouse details, catalogue prices, and owner fallback pricing without hallucinating missing data.
-- [ ] **Deterministic Backend Operations**: Backend-generated SKUs (`SAR-00001`), total math, stock quantities, and audit logs.
-- [ ] **Admin Control Panel**: Real-time Dashboard (sales, profit, AOV), Admin Storefront (in-context editing/soft-delete), Billing Desk (photo capture, PDF invoice rendering).
-- [ ] **Order & Inventory Tracking**: Stock decrements on purchase, restocks on confirmed returns, financial ledger updates.
-- [ ] **Customer Intelligence & Follow-up Worker**: Behavior analytics (interval velocity, return rate) driving draft re-engagement outreach.
-- [ ] **Human Approval Queue**: Owner review interface for Level 2 recommendations (`APPROVE`, `EDIT`, `REJECT`).
-- [ ] **Intentional Failure Demonstration**: Uninterpretable catalogue page (Page 17) triggers retry limit, halts safely, creates exception, and escalates to human review without hallucinating data.
+- [x] **Mobile-First Customer Storefront**: Responsive UI, Saree/Suit categories, PDP multi-image galleries, attribute filters (color, fabric, occasion, style).
+- [x] **Catalogue Processing Engine**: Supports PDF, image, and video ingestion without requiring Excel/CSV files.
+- [x] **Product Detection & Multi-Photo Grouping**: Merges multiple shots of the same saree into a single product gallery.
+- [x] **Duplicate Detection**: Filters exact duplicate images and identifies similar garments cleanly.
+- [x] **Attribute & Price Extraction**: Extracts fabric, color, pattern, occasion, blouse details, catalogue prices, and owner fallback pricing without hallucinating missing data.
+- [x] **Deterministic Backend Operations**: Backend-generated SKUs (`SAR-00001`), total math, stock quantities, and audit logs.
+- [x] **Admin Control Panel**: Real-time Dashboard (sales, profit, AOV), Admin Storefront (in-context editing/soft-delete), Billing Desk (photo capture, PDF invoice rendering).
+- [x] **Order & Inventory Tracking**: Stock decrements on purchase, restocks on confirmed returns, financial ledger updates.
+- [x] **Customer Intelligence & Follow-up Worker**: Behavior analytics (interval velocity, return rate) driving draft re-engagement outreach.
+- [x] **Human Approval Queue**: Owner review interface for Level 2 recommendations (`APPROVE`, `EDIT`, `REJECT`).
+- [x] **Intentional Failure Demonstration**: Uninterpretable catalogue page (Page 17) triggers retry limit, halts safely, creates exception, and escalates to human review without hallucinating data.
 
 ### 3. Submission & Demo Deliverables
-- [ ] Clean GitHub repository structure linked to `https://github.com/hritikbhardwaj12/Sareethi.git`.
-- [ ] Working web application prototype demonstrating AI Worker integration.
-- [ ] Recorded demo video showing catalogue upload, product creation, store placement, billing, dashboard metrics, customer follow-up, failure escalation, and owner approval queue.
+- [x] Clean GitHub repository structure linked to `https://github.com/hritikbhardwaj12/Sareethi.git`.
+- [x] Working web application prototype deployed live on Vercel (`https://sareethi.vercel.app`).
+- [x] Comprehensive documentation suite (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `MEMORY.md`, `docs/*`) specifying system boundaries, workflows, DPDP compliance, and audit mechanisms.
