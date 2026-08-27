@@ -34,9 +34,6 @@ export function Header() {
             <Link href="/orders" className="hover:text-purple-900 transition-colors flex items-center gap-1">
               <Package className="w-4 h-4 text-purple-900" /> My Orders
             </Link>
-            <Link href="/admin/dashboard" className="text-purple-950 font-bold bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors flex items-center gap-1">
-              Admin Portal
-            </Link>
           </nav>
 
           <div className="flex items-center gap-4">

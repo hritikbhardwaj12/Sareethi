@@ -32,22 +32,29 @@ export default function AdminDashboardPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<StoreCustomer | null>(null);
 
   // Compute Live Metrics
-  const totalSales = orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-  const totalOrders = orders.length;
-  const totalItemsSold = orders.reduce(
-    (sum, o) => sum + o.items.reduce((iSum, it) => iSum + (it.quantity || 1), 0),
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeReturns = Array.isArray(returns) ? returns : [];
+  const safeApprovals = Array.isArray(approvals) ? approvals : [];
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
+  const totalSales = safeOrders.reduce((sum, o) => sum + (Number(o?.total_price) || 0), 0);
+  const totalOrders = safeOrders.length;
+  const totalItemsSold = safeOrders.reduce(
+    (sum, o) => sum + (o?.items || []).reduce((iSum, it) => iSum + (it?.quantity || 1), 0),
     0
   );
-  const totalReturns = returns.length;
+  const totalReturns = safeReturns.length;
 
   // Approximate profit calculation
-  const totalProfit = orders.reduce((sum, o) => {
+  const totalProfit = safeOrders.reduce((sum, o) => {
     return (
       sum +
-      o.items.reduce((iSum, it) => {
-        const matchingProd = products.find((p) => p.id === it.id);
-        const cost = matchingProd ? matchingProd.cost_price : Math.round(it.price * 0.55);
-        return iSum + (it.price - cost) * (it.quantity || 1);
+      (o?.items || []).reduce((iSum, it) => {
+        const matchingProd = safeProducts.find((p) => p?.id === it?.id);
+        const price = Number(it?.price) || 0;
+        const cost = matchingProd ? (Number(matchingProd.cost_price) || 0) : Math.round(price * 0.55);
+        return iSum + (price - cost) * (it?.quantity || 1);
       }, 0)
     );
   }, 0);
@@ -55,19 +62,20 @@ export default function AdminDashboardPage() {
   const profitMarginPercent = totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : '42.0';
 
   // Low Stock Items (Threshold <= 3)
-  const lowStockItems = products
-    .filter((p) => p.status !== 'DELETED' && p.stock_quantity <= 3)
+  const lowStockItems = safeProducts
+    .filter((p) => p && p.status !== 'DELETED' && (Number(p.stock_quantity) || 0) <= 3)
     .slice(0, 4);
 
   // Top Selling Products
   const productSalesMap: Record<string, { name: string; sales: number; revenue: number }> = {};
-  orders.forEach((o) => {
-    o.items.forEach((it) => {
+  safeOrders.forEach((o) => {
+    (o?.items || []).forEach((it) => {
+      if (!it || !it.id) return;
       if (!productSalesMap[it.id]) {
-        productSalesMap[it.id] = { name: it.name, sales: 0, revenue: 0 };
+        productSalesMap[it.id] = { name: it.name || 'Product', sales: 0, revenue: 0 };
       }
       productSalesMap[it.id].sales += it.quantity || 1;
-      productSalesMap[it.id].revenue += it.price * (it.quantity || 1);
+      productSalesMap[it.id].revenue += (Number(it.price) || 0) * (it.quantity || 1);
     });
   });
 
@@ -77,7 +85,7 @@ export default function AdminDashboardPage() {
     .slice(0, 3);
 
   // Pending Approvals
-  const pendingApprovals = approvals.filter((a) => a.status === 'PENDING').slice(0, 3);
+  const pendingApprovals = safeApprovals.filter((a) => a && a.status === 'PENDING').slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -327,16 +335,16 @@ export default function AdminDashboardPage() {
           {/* Recent Orders Feed */}
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <h3 className="font-serif text-base font-bold text-gray-900">Orders ({orders.length})</h3>
+              <h3 className="font-serif text-base font-bold text-gray-900">Orders ({safeOrders.length})</h3>
               <Link href="/admin/orders" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-0.5">
                 Open Orders Desk <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
             <div className="space-y-2.5 text-xs">
-              {orders.length === 0 ? (
+              {safeOrders.length === 0 ? (
                 <p className="text-gray-400 text-xs py-4 text-center">No orders placed yet.</p>
               ) : (
-                orders.slice(0, 5).map((ord) => (
+                safeOrders.slice(0, 5).map((ord) => (
                   <div
                     key={ord.id}
                     onClick={() => setSelectedOrder(ord)}
@@ -348,11 +356,11 @@ export default function AdminDashboardPage() {
                         <span className="font-semibold text-gray-900">{ord.customer_name}</span>
                       </div>
                       <p className="text-[10px] text-gray-400 mt-0.5">
-                        {ord.items.length} items • {ord.date}
+                        {(ord.items || []).length} items • {ord.date}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="font-bold text-gray-900 block">₹{ord.total_price.toLocaleString()}</span>
+                      <span className="font-bold text-gray-900 block">₹{(ord.total_price || 0).toLocaleString()}</span>
                       <span className="block text-[10px] font-bold text-purple-950">{ord.status_label || ord.status}</span>
                     </div>
                   </div>
@@ -364,16 +372,16 @@ export default function AdminDashboardPage() {
           {/* Customer Profiles Preview */}
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <h3 className="font-serif text-base font-bold text-gray-900">Customers ({customers.length})</h3>
+              <h3 className="font-serif text-base font-bold text-gray-900">Customers ({safeCustomers.length})</h3>
               <Link href="/admin/customers" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-0.5">
                 Open Database <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
             <div className="space-y-2.5 text-xs">
-              {customers.length === 0 ? (
+              {safeCustomers.length === 0 ? (
                 <p className="text-gray-400 text-xs py-4 text-center">No customers registered yet.</p>
               ) : (
-                customers.slice(0, 5).map((cust) => (
+                safeCustomers.slice(0, 5).map((cust) => (
                   <div
                     key={cust.id}
                     onClick={() => setSelectedCustomer(cust)}
@@ -385,11 +393,11 @@ export default function AdminDashboardPage() {
                         <span className="font-semibold text-gray-900">{cust.name}</span>
                       </div>
                       <p className="text-[10px] text-gray-400 mt-0.5">
-                        Phone: {cust.phone} • {cust.total_orders} Orders
+                        Phone: {cust.phone} • {cust.total_orders || 0} Orders
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="font-bold text-gray-900 block">₹{cust.total_spent.toLocaleString()}</span>
+                      <span className="font-bold text-gray-900 block">₹{(cust.total_spent || 0).toLocaleString()}</span>
                       <span className="text-[10px] text-emerald-700 font-semibold">{cust.preferred || 'Saree'}s</span>
                     </div>
                   </div>
@@ -401,20 +409,20 @@ export default function AdminDashboardPage() {
           {/* Recent Returns Feed */}
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <h3 className="font-serif text-base font-bold text-gray-900">Returns Desk ({returns.length})</h3>
+              <h3 className="font-serif text-base font-bold text-gray-900">Returns Desk ({safeReturns.length})</h3>
               <Link href="/admin/returns" className="text-xs font-bold text-purple-950 hover:underline flex items-center gap-0.5">
                 Open Returns <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
             <div className="space-y-2.5 text-xs">
-              {returns.length === 0 ? (
+              {safeReturns.length === 0 ? (
                 <p className="text-gray-400 text-xs py-4 text-center">No returns processed yet.</p>
               ) : (
-                returns.slice(0, 5).map((ret) => (
+                safeReturns.slice(0, 5).map((ret) => (
                   <div key={ret.id} className="p-2.5 bg-rose-50/40 rounded-lg border border-rose-100 space-y-1">
                     <div className="flex justify-between font-semibold text-gray-900">
                       <span>{ret.id} ({ret.customer})</span>
-                      <span className="font-bold text-rose-700">₹{ret.amount.toLocaleString()}</span>
+                      <span className="font-bold text-rose-700">₹{(ret.amount || 0).toLocaleString()}</span>
                     </div>
                     <p className="text-[11px] text-gray-600">Bill: {ret.bill} • Reason: {ret.reason}</p>
                     <p className="text-[10px] text-gray-400">{ret.time}</p>
