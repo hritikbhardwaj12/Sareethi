@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (savedProfile) {
       if (!name && savedProfile.fullName) setName(savedProfile.fullName);
+      if (!email && savedProfile.email) setEmail(savedProfile.email);
       if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
       if (!address && savedProfile.address) setAddress(savedProfile.address);
     }
@@ -34,7 +35,7 @@ export default function CheckoutPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
-          setEmail(user.email);
+          if (!email) setEmail(user.email);
           if (!name && user.user_metadata?.full_name) {
             setName(user.user_metadata.full_name);
           }
@@ -51,9 +52,10 @@ export default function CheckoutPage() {
     if (!items.length) return;
     setIsSubmitting(true);
     try {
-      // 1. Save profile for next time in store context + local storage
+      // 1. Save profile (name, email, phone, address) for future checkouts
       saveUserProfile({
         fullName: name.trim(),
+        email: email.trim(),
         phone: phone.trim(),
         address: address.trim(),
       });

@@ -459,8 +459,8 @@ interface StoreDataContextType {
     suggestedMessage: string;
   }) => Promise<{ success: boolean; approvalId: string }>;
 
-  savedProfile: { fullName: string; phone: string; address: string } | null;
-  saveUserProfile: (profile: { fullName: string; phone: string; address: string }) => void;
+  savedProfile: { fullName: string; email?: string; phone: string; address: string } | null;
+  saveUserProfile: (profile: { fullName: string; email?: string; phone: string; address: string }) => void;
 }
 
 const StoreDataContext = createContext<StoreDataContextType | undefined>(undefined);
@@ -472,7 +472,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const [bills, setBills] = useState<StoreBill[]>(INITIAL_BILLS);
   const [returns, setReturns] = useState<StoreReturn[]>(INITIAL_RETURNS);
   const [approvals, setApprovals] = useState<StoreApproval[]>(INITIAL_APPROVALS);
-  const [savedProfile, setSavedProfile] = useState<{ fullName: string; phone: string; address: string } | null>(null);
+  const [savedProfile, setSavedProfile] = useState<{ fullName: string; email?: string; phone: string; address: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from LocalStorage & Cloud Sync on mount
@@ -565,7 +565,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const saveUserProfile = (profile: { fullName: string; phone: string; address: string }) => {
+  const saveUserProfile = (profile: { fullName: string; email?: string; phone: string; address: string }) => {
     setSavedProfile(profile);
     try {
       localStorage.setItem('sareethi_saved_profile', JSON.stringify(profile));
