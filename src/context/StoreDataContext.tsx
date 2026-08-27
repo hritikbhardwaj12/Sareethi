@@ -763,7 +763,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const newApproval: StoreApproval = {
       id: approvalId,
       category,
-      risk: 'LOW_RISK',
+      risk: 'LOW',
       title,
       customer: custName,
       email: targetOrder?.customer_phone ? `${custName.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'customer@gmail.com',
