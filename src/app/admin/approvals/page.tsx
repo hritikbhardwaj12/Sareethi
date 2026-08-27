@@ -44,9 +44,9 @@ export default function AdminApprovalsPage() {
         const foundCust = customers.find(
           (c) => c.name.toLowerCase() === customer.toLowerCase()
         );
-        let email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || 'hritikbhardwaj12@gmail.com';
+        let email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || 'bhardwajhritik8@gmail.com';
         if (!email || !email.includes('@') || email.endsWith('@example.com')) {
-          email = 'hritikbhardwaj12@gmail.com';
+          email = 'bhardwajhritik8@gmail.com';
         }
 
         try {

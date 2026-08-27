@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, payload } = body || {};
 
-    const defaultOwnerEmail = process.env.SMTP_USER || 'hritikbhardwaj12@gmail.com';
+    const defaultOwnerEmail = process.env.SMTP_USER || 'bhardwajhritik8@gmail.com';
     const resolveRecipient = (toEmail?: string) => {
       if (toEmail && toEmail.includes('@') && !toEmail.endsWith('@example.com') && !/^\d+\.?\d*@/.test(toEmail)) {
         return toEmail.trim();

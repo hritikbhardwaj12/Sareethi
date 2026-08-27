@@ -82,7 +82,7 @@ export default function CheckoutPage() {
       });
 
       // 4. Trigger AI Worker Automated Email Receipt & Loyalty Follow-Up
-      const recipientEmail = email.trim() || 'hritikbhardwaj12@gmail.com';
+      const recipientEmail = email.trim() || 'bhardwajhritik8@gmail.com';
       try {
         await fetch('/api/email/send', {
           method: 'POST',

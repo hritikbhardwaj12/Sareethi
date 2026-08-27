@@ -641,7 +641,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       id: orderId,
       customer_id: `CUST-${Math.floor(100 + Math.random() * 900)}`,
       customer_name: orderInput.customerName,
-      customer_email: orderInput.customerEmail || 'hritikbhardwaj12@gmail.com',
+      customer_email: orderInput.customerEmail || 'bhardwajhritik8@gmail.com',
       customer_phone: orderInput.customerPhone,
       shipping_address: orderInput.deliveryAddress,
       total_price: orderInput.totalAmount,
@@ -775,7 +775,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       risk: 'LOW',
       title,
       customer: custName,
-      email: targetOrder?.customer_email || 'hritikbhardwaj12@gmail.com',
+      email: targetOrder?.customer_email || 'bhardwajhritik8@gmail.com',
       details: {
         order_id: orderId,
         suggested_message: message,
