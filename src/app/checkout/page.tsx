@@ -82,32 +82,34 @@ export default function CheckoutPage() {
         totalAmount,
       });
 
-      // 4. Trigger AI Worker Automated Email Receipt & Loyalty Follow-Up
-      const recipientEmail = email.trim() || 'bhardwajhritik8@gmail.com';
-      try {
-        await fetch('/api/email/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'SEND_ORDER_INVOICE',
-            payload: {
-              to: recipientEmail,
-              customerName: name.trim() || 'Valued Customer',
-              orderId: res.orderId,
-              items: items.map((it) => ({
-                name: it.name,
-                price: it.price,
-                quantity: it.quantity,
-                size: it.size,
-              })),
-              totalPrice: totalAmount,
-              shippingAddress: address.trim(),
-              subject: `Order Confirmed: ${res.orderId} Bill Receipt & 5% OFF Gift from Sareethi!`,
-            },
-          }),
-        });
-      } catch (e) {
-        console.error('Failed to dispatch order confirmation email:', e);
+      // 4. Trigger AI Worker Automated Email Receipt & Loyalty Follow-Up to Customer Email
+      const customerEmail = email.trim();
+      if (customerEmail && customerEmail.includes('@')) {
+        try {
+          await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'SEND_ORDER_INVOICE',
+              payload: {
+                to: customerEmail,
+                customerName: name.trim() || 'Valued Customer',
+                orderId: res.orderId,
+                items: items.map((it) => ({
+                  name: it.name,
+                  price: it.price,
+                  quantity: it.quantity,
+                  size: it.size,
+                })),
+                totalPrice: totalAmount,
+                shippingAddress: address.trim(),
+                subject: `Order Confirmed: ${res.orderId} Bill Receipt & 5% OFF Gift from Sareethi!`,
+              },
+            }),
+          });
+        } catch (e) {
+          console.error('Failed to dispatch order confirmation email:', e);
+        }
       }
 
       setCreatedOrderId(res.orderId);
@@ -164,6 +166,21 @@ export default function CheckoutPage() {
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
                     placeholder="Enter your full name"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Customer Email Address (For Order Bill & Invoice Delivery)</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
+                    placeholder="customer@example.com"
+                  />
+                  <span className="text-[10px] text-gray-500 mt-0.5 block">
+                    📧 Official order confirmation, invoice receipt, and 5% OFF discount voucher will be sent to this email address.
+                  </span>
                 </div>
 
                 <div>

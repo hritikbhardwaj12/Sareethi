@@ -44,9 +44,19 @@ export default function AdminApprovalsPage() {
         const foundCust = customers.find(
           (c) => c.name.toLowerCase() === customer.toLowerCase()
         );
-        let email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || 'bhardwajhritik8@gmail.com';
+        let email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || '';
+
         if (!email || !email.includes('@') || email.endsWith('@example.com')) {
-          email = 'bhardwajhritik8@gmail.com';
+          const inputPrompt = prompt(
+            `Customer email for "${customer}" is missing. Please enter the customer's email address to deliver this update:`,
+            ''
+          );
+          if (!inputPrompt || !inputPrompt.includes('@')) {
+            setToastMessage(`⚠️ Follow-up approval recorded, but email dispatch was cancelled (valid customer email required).`);
+            setTimeout(() => setToastMessage(null), 6000);
+            return;
+          }
+          email = inputPrompt.trim();
         }
 
         try {
