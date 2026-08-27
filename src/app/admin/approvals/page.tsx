@@ -5,42 +5,72 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Footer } from '@/components/layout/Footer';
 import { useStoreData } from '@/context/StoreDataContext';
 import { processApprovalAction } from '@/lib/actions/approvals';
-import { Shield, Check, Edit3, X, AlertTriangle, Sparkles, MessageSquare } from 'lucide-react';
+import { Shield, Check, Edit3, X, AlertTriangle, Sparkles, MessageSquare, Mail, Send, CheckCircle2 } from 'lucide-react';
 
 export default function AdminApprovalsPage() {
-  const { approvals, processApproval } = useStoreData();
+  const { approvals, processApproval, customers } = useStoreData();
   const [isPending, startTransition] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedMessage, setEditedMessage] = useState<string>('');
+  const [editedEmail, setEditedEmail] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const pendingApprovals = approvals.filter((a) => a.status === 'PENDING');
 
-  const handleDecision = (id: string, decision: 'APPROVED' | 'EDITED' | 'REJECTED') => {
+  const startEditing = (appr: any) => {
+    setEditingId(appr.id);
+    setEditedMessage(appr.payload?.suggested_message || '');
+    const foundCust = customers.find(
+      (c) => c.name.toLowerCase() === (appr.payload?.customer_name || '').toLowerCase()
+    );
+    setEditedEmail(appr.payload?.customer_email || foundCust?.email || 'customer@example.com');
+  };
+
+  const handleDecision = (id: string, decision: 'APPROVED' | 'EDITED' | 'REJECTED', customMsg?: string, customEmail?: string) => {
     const targetApproval = approvals.find((a) => a.id === id);
 
     startTransition(async () => {
       // 1. Process in local store context
       await processApproval(id, decision);
 
-      // 2. Automated AI Worker WhatsApp Follow-Up Delivery if approved
-      if (decision === 'APPROVED' && targetApproval?.type === 'CUSTOMER_FOLLOWUP') {
-        const customer = targetApproval.payload?.customer_name;
-        const msg = targetApproval.payload?.suggested_message;
-        const phone = targetApproval.payload?.customer_phone || '9128737971';
+      // 2. Automated Email Follow-Up Delivery if approved or edited & approved
+      if ((decision === 'APPROVED' || decision === 'EDITED') &&
+          (targetApproval?.type === 'CUSTOMER_FOLLOWUP' || targetApproval?.type === 'DELAY_ACTION')) {
+        const customer = targetApproval.payload?.customer_name || 'Customer';
+        const msg = customMsg || editedMessage || targetApproval.payload?.suggested_message;
+
+        // Lookup customer email from payload or context
+        const foundCust = customers.find(
+          (c) => c.name.toLowerCase() === customer.toLowerCase()
+        );
+        const email = customEmail || editedEmail || targetApproval.payload?.customer_email || foundCust?.email || 'customer@example.com';
 
         try {
-          fetch('/api/whatsapp/send', {
+          const res = await fetch('/api/email/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'SEND_FOLLOWUP',
               payload: {
-                to: phone,
+                to: email,
                 customerName: customer,
                 messageText: msg,
+                subject: `Special Update from Sareethi Fashion Retail for ${customer}`,
               },
             }),
-          }).catch(() => {});
-        } catch (e) {}
+          });
+          const data = await res.json();
+          if (data.success) {
+            setToastMessage(`📧 Follow-up email successfully sent to ${email}`);
+            setTimeout(() => setToastMessage(null), 5000);
+          }
+        } catch (e) {
+          console.error('Failed to send follow-up email:', e);
+        }
       }
+
+      // Reset edit mode if active
+      setEditingId(null);
 
       // 3. Process via server action
       try {
@@ -56,6 +86,22 @@ export default function AdminApprovalsPage() {
       <AdminHeader />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Toast Alert */}
+        {toastMessage && (
+          <div className="bg-emerald-900 text-emerald-100 px-6 py-4 rounded-2xl shadow-xl border border-emerald-700 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <p className="text-sm font-semibold">{toastMessage}</p>
+            </div>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="text-emerald-300 hover:text-white font-bold text-xs"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-purple-950 text-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -81,77 +127,150 @@ export default function AdminApprovalsPage() {
               <p className="text-xs text-gray-500">There are no pending Level 2 AI recommendations requiring your review.</p>
             </div>
           ) : (
-            pendingApprovals.map((appr) => (
-              <div key={appr.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-purple-950 bg-purple-50 px-2 py-0.5 rounded">
-                        {appr.id}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          appr.risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        Risk: {appr.risk}
-                      </span>
-                      <span className="text-xs text-gray-400">{appr.date}</span>
-                    </div>
-                    <h3 className="font-serif text-lg font-bold text-gray-900">{appr.title}</h3>
-                  </div>
-                </div>
+            pendingApprovals.map((appr) => {
+              const isEditingThis = editingId === appr.id;
+              const foundCust = customers.find(
+                (c) => c.name.toLowerCase() === (appr.payload?.customer_name || '').toLowerCase()
+              );
+              const defaultTargetEmail = appr.payload?.customer_email || foundCust?.email || 'customer@example.com';
 
-                {/* Payload Content Preview */}
-                <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 border border-gray-100">
-                  {appr.payload?.suggested_message && (
+              return (
+                <div key={appr.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+                  <div className="flex justify-between items-start flex-wrap gap-2">
                     <div className="space-y-1">
-                      <span className="font-semibold text-gray-700 flex items-center gap-1">
-                        <MessageSquare className="w-3.5 h-3.5 text-purple-950" /> Suggested Customer Message:
-                      </span>
-                      <p className="italic text-gray-800 bg-white p-3 rounded border border-gray-200">
-                        "{appr.payload.suggested_message}"
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-purple-950 bg-purple-50 px-2 py-0.5 rounded">
+                          {appr.id}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            appr.risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          Risk: {appr.risk}
+                        </span>
+                        <span className="text-xs text-gray-400">{appr.date}</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-bold text-gray-900">{appr.title}</h3>
+                    </div>
+
+                    {/* Delivery Channel Badges */}
+                    {(appr.type === 'CUSTOMER_FOLLOWUP' || appr.type === 'DELAY_ACTION') && (
+                      <div className="flex items-center gap-2">
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-emerald-600" /> Email: Active
+                        </span>
+                        <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
+                          💬 WhatsApp: Planned
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payload Content Preview & Inline Editor */}
+                  <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-3 border border-gray-100">
+                    {appr.payload?.suggested_message && !isEditingThis && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 flex items-center gap-1">
+                            <MessageSquare className="w-3.5 h-3.5 text-purple-950" /> Suggested Customer Message:
+                          </span>
+                          <span className="text-gray-500 text-[11px]">
+                            Recipient Email: <strong className="text-purple-950">{defaultTargetEmail}</strong>
+                          </span>
+                        </div>
+                        <p className="italic text-gray-800 bg-white p-3 rounded border border-gray-200">
+                          "{appr.payload.suggested_message}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Inline Editor for Edit & Approve */}
+                    {isEditingThis && (
+                      <div className="bg-white p-4 rounded-xl border border-purple-200 space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <label className="font-bold text-purple-950 flex items-center gap-1">
+                            <Edit3 className="w-4 h-4 text-purple-700" /> Edit Follow-Up Message & Email
+                          </label>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-gray-400 hover:text-gray-600 text-xs font-semibold"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 mb-1">Target Customer Email:</label>
+                          <input
+                            type="email"
+                            value={editedEmail}
+                            onChange={(e) => setEditedEmail(e.target.value)}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:ring-2 focus:ring-purple-900 focus:outline-none"
+                            placeholder="customer@example.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 mb-1">Custom Message Text:</label>
+                          <textarea
+                            rows={3}
+                            value={editedMessage}
+                            onChange={(e) => setEditedMessage(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-serif text-gray-900 focus:ring-2 focus:ring-purple-900 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            onClick={() => handleDecision(appr.id, 'EDITED', editedMessage, editedEmail)}
+                            disabled={isPending}
+                            className="px-4 py-2 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <Send className="w-3.5 h-3.5" /> Save & Send Email Follow-Up
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {appr.payload?.order_id && (
+                      <p className="text-gray-700">
+                        Target Order: <span className="font-mono font-bold text-purple-950">{appr.payload.order_id}</span> • Customer: <span className="font-semibold">{appr.payload.customer_name}</span>
                       </p>
+                    )}
+                    {appr.payload?.sku && (
+                      <p className="text-gray-700">
+                        Product SKU: <span className="font-mono font-bold text-purple-950">{appr.payload.sku}</span> • AI Confidence: <span className="font-bold text-amber-700">{Math.round((appr.payload.confidence || 0.8) * 100)}%</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Owner Decision Action Buttons */}
+                  {!isEditingThis && (
+                    <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 flex-wrap">
+                      <button
+                        onClick={() => handleDecision(appr.id, 'REJECTED')}
+                        disabled={isPending}
+                        className="px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl hover:bg-rose-100 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" /> [ REJECT ]
+                      </button>
+                      <button
+                        onClick={() => startEditing(appr)}
+                        disabled={isPending}
+                        className="px-4 py-2 border border-gray-300 font-bold text-xs rounded-xl text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" /> [ EDIT & APPROVE ]
+                      </button>
+                      <button
+                        onClick={() => handleDecision(appr.id, 'APPROVED')}
+                        disabled={isPending}
+                        className="px-5 py-2 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" /> [ APPROVE & SEND EMAIL ]
+                      </button>
                     </div>
                   )}
-                  {appr.payload?.order_id && (
-                    <p className="text-gray-700">
-                      Target Order: <span className="font-mono font-bold text-purple-950">{appr.payload.order_id}</span> • Customer: <span className="font-semibold">{appr.payload.customer_name}</span>
-                    </p>
-                  )}
-                  {appr.payload?.sku && (
-                    <p className="text-gray-700">
-                      Product SKU: <span className="font-mono font-bold text-purple-950">{appr.payload.sku}</span> • AI Confidence: <span className="font-bold text-amber-700">{Math.round((appr.payload.confidence || 0.8) * 100)}%</span>
-                    </p>
-                  )}
                 </div>
-
-                {/* Owner Decision Action Buttons */}
-                <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                  <button
-                    onClick={() => handleDecision(appr.id, 'REJECTED')}
-                    disabled={isPending}
-                    className="px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl hover:bg-rose-100 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" /> [ REJECT ]
-                  </button>
-                  <button
-                    onClick={() => handleDecision(appr.id, 'EDITED')}
-                    disabled={isPending}
-                    className="px-4 py-2 border border-gray-300 font-bold text-xs rounded-xl text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4" /> [ EDIT & APPROVE ]
-                  </button>
-                  <button
-                    onClick={() => handleDecision(appr.id, 'APPROVED')}
-                    disabled={isPending}
-                    className="px-5 py-2 bg-purple-950 text-white font-bold text-xs rounded-xl hover:bg-purple-900 shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Check className="w-4 h-4" /> [ APPROVE ]
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
@@ -160,3 +279,4 @@ export default function AdminApprovalsPage() {
     </div>
   );
 }
+

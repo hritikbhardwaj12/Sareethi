@@ -52,6 +52,7 @@ export interface StoreOrder {
 export interface StoreCustomer {
   id: string;
   name: string;
+  email?: string;
   phone: string;
   total_orders: number;
   total_spent: number;
@@ -294,6 +295,7 @@ const INITIAL_CUSTOMERS: StoreCustomer[] = [
   {
     id: 'CUST-00101',
     name: 'Priya Sharma',
+    email: 'priya.sharma@example.com',
     phone: '9876543210',
     total_orders: 8,
     total_spent: 14890,
@@ -308,6 +310,7 @@ const INITIAL_CUSTOMERS: StoreCustomer[] = [
   {
     id: 'CUST-00102',
     name: 'Anita Roy',
+    email: 'anita.roy@example.com',
     phone: '9812345678',
     total_orders: 5,
     total_spent: 9495,
@@ -322,6 +325,7 @@ const INITIAL_CUSTOMERS: StoreCustomer[] = [
   {
     id: 'CUST-00103',
     name: 'Meera Patel',
+    email: 'meera.patel@example.com',
     phone: '9898765432',
     total_orders: 12,
     total_spent: 24980,
@@ -379,6 +383,7 @@ const INITIAL_APPROVALS: StoreApproval[] = [
     date: 'Just now',
     payload: {
       customer_name: 'Priya Sharma',
+      customer_email: 'priya.sharma@example.com',
       days_inactive: 42,
       suggested_message: 'Hi Priya, we noticed you enjoyed our festive saree collection! We have added new Banarsi silk arrivals that you might love.',
     },
@@ -393,6 +398,7 @@ const INITIAL_APPROVALS: StoreApproval[] = [
     payload: {
       order_id: 'ORD-1028',
       customer_name: 'Anita Roy',
+      customer_email: 'anita.roy@example.com',
       delay_hours: 8,
       suggested_message: 'Hi Anita, your Sareethi order (ORD-1028) has been slightly delayed in transit by 8 hours. We sincerely apologize and are expediting delivery today.',
     },

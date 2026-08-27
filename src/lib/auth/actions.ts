@@ -71,3 +71,14 @@ export async function updateProfileDetails(phone: string, shippingAddress: strin
   revalidatePath('/profile');
 }
 
+export async function sendWelcomeEmailAction(userEmail: string, userName?: string) {
+  const { sendEmail } = await import('@/lib/email/mailer');
+  const result = await sendEmail({
+    to: userEmail,
+    subject: 'Welcome to Sareethi Fashion — 10% OFF Voucher Inside!',
+    customerName: userName || 'Valued Customer',
+    type: 'WELCOME',
+  });
+  return result;
+}
+
