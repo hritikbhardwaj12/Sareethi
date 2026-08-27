@@ -37,6 +37,7 @@ export interface StoreOrder {
   id: string;
   customer_id: string;
   customer_name: string;
+  customer_email?: string;
   customer_phone?: string;
   shipping_address?: string;
   total_price: number;

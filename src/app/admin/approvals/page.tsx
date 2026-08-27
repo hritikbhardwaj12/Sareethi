@@ -44,7 +44,22 @@ export default function AdminApprovalsPage() {
         const foundCust = customers.find(
           (c) => c.name.toLowerCase() === customer.toLowerCase()
         );
-        const email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || 'customer@example.com';
+        let email = customEmail || editedEmail || targetApproval?.email || targetApproval?.payload?.customer_email || foundCust?.email || '';
+
+        const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !e.endsWith('@example.com') && !/^\d+\.?\d*@/.test(e);
+
+        if (!isValidEmail(email)) {
+          const inputPrompt = prompt(
+            `Please confirm/enter the customer's email address to deliver this follow-up:`,
+            'hritikbhardwaj12@gmail.com'
+          );
+          if (!inputPrompt) {
+            setToastMessage(`⚠️ Follow-up approval recorded, but email dispatch was cancelled (invalid recipient email).`);
+            setTimeout(() => setToastMessage(null), 5000);
+            return;
+          }
+          email = inputPrompt.trim();
+        }
 
         try {
           const res = await fetch('/api/email/send', {
@@ -62,10 +77,10 @@ export default function AdminApprovalsPage() {
           });
           const data = await res.json();
           if (data.success) {
-            setToastMessage(`📧 Follow-up email successfully delivered to ${email}!`);
-            setTimeout(() => setToastMessage(null), 6000);
+            setToastMessage(`📧 Follow-up email successfully delivered via Gmail SMTP to ${email}!`);
+            setTimeout(() => setToastMessage(null), 7000);
           } else {
-            setToastMessage(`❌ Email Error: ${data.error || 'Failed to deliver email'}`);
+            setToastMessage(`❌ Email Delivery Failed: ${data.error || data.result?.error || 'Failed to send email'}`);
             setTimeout(() => setToastMessage(null), 8000);
           }
         } catch (e: any) {
