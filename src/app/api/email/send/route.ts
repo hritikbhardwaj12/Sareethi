@@ -6,9 +6,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, payload } = body || {};
 
+    const defaultOwnerEmail = process.env.SMTP_USER || 'hritikbhardwaj12@gmail.com';
+    const resolveRecipient = (toEmail?: string) => {
+      if (toEmail && toEmail.includes('@') && !toEmail.endsWith('@example.com') && !/^\d+\.?\d*@/.test(toEmail)) {
+        return toEmail.trim();
+      }
+      return defaultOwnerEmail;
+    };
+
     if (action === 'SEND_FOLLOWUP') {
       const { to, customerName, messageText, subject } = payload || {};
-      const recipient = to || 'customer@example.com';
+      const recipient = resolveRecipient(to);
       const emailSubject = subject || `Special Update from Sareethi Fashion Retail`;
 
       const result = await sendEmail({
@@ -30,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'SEND_WELCOME') {
       const { to, userName, subject } = payload || {};
-      const recipient = to || 'user@example.com';
+      const recipient = resolveRecipient(to);
       const emailSubject = subject || `Welcome to Sareethi Fashion — 10% OFF Your First Order!`;
 
       const result = await sendEmail({
@@ -51,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'SEND_ORDER_INVOICE') {
       const { to, customerName, orderId, items, totalPrice, shippingAddress, subject } = payload || {};
-      const recipient = to || 'customer@example.com';
+      const recipient = resolveRecipient(to);
       const emailSubject = subject || `Order Confirmed: ${orderId} Receipt & Special Follow-up from Sareethi!`;
 
       const result = await sendEmail({
