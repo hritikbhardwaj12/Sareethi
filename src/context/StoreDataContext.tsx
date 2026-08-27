@@ -95,12 +95,17 @@ export interface StoreReturn {
 
 export interface StoreApproval {
   id: string;
-  type: string;
+  type?: string;
+  category?: string;
   title: string;
   risk: 'LOW' | 'MEDIUM' | 'HIGH';
   status: 'PENDING' | 'APPROVED' | 'EDITED' | 'REJECTED';
-  date: string;
-  payload: Record<string, any>;
+  date?: string;
+  customer?: string;
+  email?: string;
+  created_at?: string;
+  details?: Record<string, any>;
+  payload?: Record<string, any>;
 }
 
 const INITIAL_PRODUCTS: StoreProduct[] = [
