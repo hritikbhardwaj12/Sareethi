@@ -201,13 +201,208 @@ export function renderWelcomeEmailHtml(userName: string): string {
   `.trim();
 }
 
-export async function sendEmail(options: SendEmailOptions) {
-  const { to, subject, customerName = '', messageText = '', type = 'FOLLOWUP' } = options;
+export function renderOrderInvoiceEmailHtml(
+  customerName: string,
+  orderId: string,
+  items: Array<{ name: string; price: number; quantity: number; image?: string; size?: string }>,
+  totalPrice: number,
+  shippingAddress: string
+): string {
+  const name = customerName || 'Valued Customer';
+  const itemList = items || [];
+  const total = totalPrice || 0;
 
-  const html =
-    type === 'WELCOME'
-      ? renderWelcomeEmailHtml(customerName)
-      : renderFollowupEmailHtml(customerName, messageText);
+  const itemRowsHtml = itemList
+    .map(
+      (it) => `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 12px 0; font-family: sans-serif; font-size: 13px; color: #1e293b;">
+          <strong>${it.name}</strong><br>
+          <span style="font-size: 11px; color: #64748b;">Qty: ${it.quantity || 1} • Size: ${it.size || 'ONESIZE'}</span>
+        </td>
+        <td align="right" style="padding: 12px 0; font-family: sans-serif; font-size: 13px; font-weight: bold; color: #2e0229;">
+          ₹${((it.price || 0) * (it.quantity || 1)).toLocaleString()}
+        </td>
+      </tr>
+    `
+    )
+    .join('');
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Receipt & Invoice — Sareethi Fashion</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Georgia', 'Times New Roman', serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" max-width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid #f1f5f9;">
+          
+          <!-- Brand Header -->
+          <tr>
+            <td style="background-color: #2e0229; padding: 36px 24px; text-align: center;">
+              <div style="display: inline-block; background-color: #2e0229; border: 2px solid #4a0a43; color: #f59e0b; font-weight: bold; width: 48px; height: 48px; line-height: 48px; border-radius: 14px; font-size: 26px; margin-bottom: 12px; font-family: Georgia, serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                S
+              </div>
+              <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 1.5px;">
+                Thank You for Your Order!
+              </h1>
+              <p style="margin: 6px 0 0 0; color: #f3e8ff; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif;">
+                Order Confirmation & Official Bill Receipt
+              </p>
+            </td>
+          </tr>
+
+          <!-- Gold Accent Line -->
+          <tr>
+            <td style="background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, #d97706 100%); height: 4px;"></td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #2e0229;">
+                Hello ${name},
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #334155; font-family: sans-serif;">
+                We have received your order <strong>${orderId}</strong> and our workshop is carefully preparing your garments for dispatch! Here is your official order receipt:
+              </p>
+
+              <!-- Order Summary Box -->
+              <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" style="font-family: sans-serif; font-size: 13px;">
+                  <tr>
+                    <td style="color: #6b21a8; font-weight: bold;">Order Reference:</td>
+                    <td align="right" style="color: #2e0229; font-weight: bold; font-family: monospace; font-size: 14px;">${orderId}</td>
+                  </tr>
+                  <tr>
+                    <td style="color: #6b21a8; font-weight: bold; padding-top: 6px;">Payment Status:</td>
+                    <td align="right" style="color: #15803d; font-weight: bold; padding-top: 6px;">CONFIRMED ✓</td>
+                  </tr>
+                  ${
+                    shippingAddress
+                      ? `
+                  <tr>
+                    <td colSpan="2" style="padding-top: 10px; border-top: 1px solid #f3e8ff; color: #4c1d95; font-size: 12px;">
+                      <strong>Delivery Address:</strong> ${shippingAddress}
+                    </td>
+                  </tr>
+                  `
+                      : ''
+                  }
+                </table>
+              </div>
+
+              <!-- Itemized Table -->
+              <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold; color: #2e0229; text-transform: uppercase; font-family: sans-serif; letter-spacing: 0.5px;">
+                Purchased Garments
+              </h3>
+              <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; border-collapse: collapse;">
+                ${itemRowsHtml}
+                <tr>
+                  <td style="padding: 16px 0 0 0; font-family: sans-serif; font-size: 15px; font-weight: bold; color: #1e293b;">
+                    Total Paid
+                  </td>
+                  <td align="right" style="padding: 16px 0 0 0; font-family: sans-serif; font-size: 18px; font-weight: bold; color: #2e0229;">
+                    ₹${total.toLocaleString()}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- AI Worker Loyalty Thank-You & Follow-up Box -->
+              <div style="background-color: #fffbe0; border: 2px dashed #d97706; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 28px;">
+                <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 700; color: #92400e; text-transform: uppercase; font-family: sans-serif; letter-spacing: 1px;">
+                  Exclusive Sareethi Reward
+                </p>
+                <h4 style="margin: 0 0 8px 0; font-size: 18px; color: #78350f; font-weight: bold;">
+                  GET 5% OFF YOUR NEXT SAREE & SUIT PURCHASE!
+                </h4>
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #a16207; font-family: sans-serif;">
+                  We love having you in our Sareethi family! Use code at your next checkout:
+                </p>
+                <div style="display: inline-block; background-color: #2e0229; color: #f59e0b; font-family: monospace; font-size: 16px; font-weight: bold; padding: 6px 18px; border-radius: 6px; letter-spacing: 1.5px;">
+                  THANKYOU5
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://sareethi.vercel.app/orders" target="_blank" style="font-size: 14px; font-family: sans-serif; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 10px; padding: 12px 24px; display: inline-block; background-color: #2e0229; margin-right: 8px;">
+                      Track Order Status &rarr;
+                    </a>
+                    <a href="https://sareethi.vercel.app/products" target="_blank" style="font-size: 14px; font-family: sans-serif; font-weight: bold; color: #2e0229; text-decoration: none; border-radius: 10px; padding: 12px 24px; display: inline-block; background-color: #f3e8ff; border: 1px solid #d8b4fe;">
+                      Shop Collection
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b; font-family: sans-serif;">
+                Have questions about your order? Reply directly to this email or contact customer care.<br><br>
+                Warmest regards,<br>
+                <strong style="color: #2e0229;">Sareethi AI Customer Operations Worker</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #1e1b1e; padding: 20px; text-align: center; font-family: sans-serif; font-size: 11px; color: #94a3b8; border-top: 1px solid #334155;">
+              <p style="margin: 0 0 6px 0; font-weight: 600; color: #e2e8f0;">
+                Sareethi Fashion Retail • Handcrafted Sarees & Designer Suits
+              </p>
+              <p style="margin: 0; color: #64748b;">
+                Deoghar Outlet & Online Storefront • <a href="https://sareethi.vercel.app" style="color: #f59e0b; text-decoration: none;">sareethi.vercel.app</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+export interface SendEmailOptions {
+  to: string;
+  subject: string;
+  customerName?: string;
+  messageText?: string;
+  orderId?: string;
+  items?: Array<{ name: string; price: number; quantity: number; image?: string; size?: string }>;
+  totalPrice?: number;
+  shippingAddress?: string;
+  type?: 'FOLLOWUP' | 'WELCOME' | 'ORDER_INVOICE' | 'CUSTOM';
+}
+
+export async function sendEmail(options: SendEmailOptions) {
+  const {
+    to,
+    subject,
+    customerName = '',
+    messageText = '',
+    orderId = '',
+    items = [],
+    totalPrice = 0,
+    shippingAddress = '',
+    type = 'FOLLOWUP',
+  } = options;
+
+  let html = renderFollowupEmailHtml(customerName, messageText);
+  if (type === 'WELCOME') {
+    html = renderWelcomeEmailHtml(customerName);
+  } else if (type === 'ORDER_INVOICE') {
+    html = renderOrderInvoiceEmailHtml(customerName, orderId, items, totalPrice, shippingAddress);
+  }
 
   // Check for external SMTP environment variables
   const smtpHost = process.env.SMTP_HOST;

@@ -49,6 +49,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (action === 'SEND_ORDER_INVOICE') {
+      const { to, customerName, orderId, items, totalPrice, shippingAddress, subject } = payload || {};
+      const recipient = to || 'customer@example.com';
+      const emailSubject = subject || `Order Confirmed: ${orderId} Receipt & Special Follow-up from Sareethi!`;
+
+      const result = await sendEmail({
+        to: recipient,
+        subject: emailSubject,
+        customerName: customerName || 'Valued Customer',
+        orderId: orderId || 'ORD-STORE',
+        items: items || [],
+        totalPrice: totalPrice || 0,
+        shippingAddress: shippingAddress || '',
+        type: 'ORDER_INVOICE',
+      });
+
+      return NextResponse.json({
+        success: result.success,
+        error: result.error,
+        channel: 'EMAIL',
+        recipient,
+        result,
+      });
+    }
+
     return NextResponse.json(
       { success: false, error: 'Unsupported email action' },
       { status: 400 }

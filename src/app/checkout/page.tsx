@@ -6,26 +6,44 @@ import { Footer } from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { useStoreData } from '@/context/StoreDataContext';
 import { updateProfileDetails } from '@/lib/auth/actions';
-import { CheckCircle2, ArrowRight, Loader2, UserCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { CheckCircle2, ArrowRight, Loader2, UserCheck, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { items, totalAmount, clearCart } = useCart();
   const { placeOrder, savedProfile, saveUserProfile } = useStoreData();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
 
-  // Autofill from saved profile
+  // Autofill from saved profile & Supabase Auth
   useEffect(() => {
     if (savedProfile) {
       if (!name && savedProfile.fullName) setName(savedProfile.fullName);
       if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
       if (!address && savedProfile.address) setAddress(savedProfile.address);
     }
+
+    const loadUserEmail = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.email) {
+          setEmail(user.email);
+          if (!name && user.user_metadata?.full_name) {
+            setName(user.user_metadata.full_name);
+          }
+        }
+      } catch (e) {
+        // Fallback
+      }
+    };
+    loadUserEmail();
   }, [savedProfile]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -62,6 +80,36 @@ export default function CheckoutPage() {
         })),
         totalAmount,
       });
+
+      // 4. Trigger AI Worker Automated Email Receipt & Loyalty Follow-Up
+      const recipientEmail = email.trim();
+      if (recipientEmail) {
+        try {
+          await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'SEND_ORDER_INVOICE',
+              payload: {
+                to: recipientEmail,
+                customerName: name.trim(),
+                orderId: res.orderId,
+                items: items.map((it) => ({
+                  name: it.name,
+                  price: it.price,
+                  quantity: it.quantity,
+                  size: it.size,
+                })),
+                totalPrice: totalAmount,
+                shippingAddress: address.trim(),
+                subject: `Order Confirmed: ${res.orderId} Bill Receipt & 5% OFF Gift from Sareethi!`,
+              },
+            }),
+          });
+        } catch (e) {
+          console.error('Failed to dispatch order confirmation email:', e);
+        }
+      }
 
       setCreatedOrderId(res.orderId);
       setOrderConfirmed(true);
@@ -115,7 +163,23 @@ export default function CheckoutPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
+                    placeholder="Enter your full name"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Email Address (For Bill & Receipt Email)</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none bg-purple-50/20"
+                    placeholder="yourname@gmail.com"
+                  />
+                  <span className="text-[10px] text-purple-900 mt-0.5 block font-medium">
+                    📧 Official order receipt, bill, and 5% OFF discount voucher will be sent to this email.
+                  </span>
                 </div>
 
                 <div>
