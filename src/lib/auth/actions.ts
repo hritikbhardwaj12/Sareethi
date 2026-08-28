@@ -29,6 +29,12 @@ export async function signOut() {
   redirect('/login');
 }
 
+export async function signOutAdmin() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/admin/login');
+}
+
 export async function getCurrentProfile() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
