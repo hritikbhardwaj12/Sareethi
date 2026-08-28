@@ -1,16 +1,44 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { signInWithGoogle } from '@/lib/auth/actions';
 
 export function GoogleAuthButton({ label = 'Continue with Google', nextUrl }: { label?: string; nextUrl?: string }) {
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      if (typeof window !== 'undefined') {
+        const supabase = createClient();
+        const origin = window.location.origin;
+        const target = nextUrl || '/';
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(target)}`,
+          },
+        });
+        if (!error) return;
+      }
+
+      await signInWithGoogle(nextUrl);
+    } catch (e) {
+      console.error('Google Sign In Error:', e);
+      try {
+        await signInWithGoogle(nextUrl);
+      } catch (err) {}
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <button
-      onClick={() => startTransition(async () => await signInWithGoogle(nextUrl))}
-      disabled={isPending}
-      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium transition-all disabled:opacity-50"
+      onClick={handleGoogleSignIn}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium transition-all disabled:opacity-50 cursor-pointer"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path
@@ -30,7 +58,7 @@ export function GoogleAuthButton({ label = 'Continue with Google', nextUrl }: { 
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
         />
       </svg>
-      {isPending ? 'Connecting...' : label}
+      {loading ? 'Connecting...' : label}
     </button>
   );
 }
