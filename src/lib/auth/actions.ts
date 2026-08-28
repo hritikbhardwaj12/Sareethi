@@ -48,19 +48,25 @@ export async function getCurrentProfile() {
   };
 }
 
-export async function updateProfileDetails(phone: string, shippingAddress: string) {
+export async function updateProfileDetails(phone: string, shippingAddress: string, fullName?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) throw new Error('Not authenticated');
 
+  const updatePayload: Record<string, any> = {
+    phone: phone || null,
+    shipping_address: shippingAddress || null,
+    updated_at: new Date().toISOString()
+  };
+
+  if (fullName) {
+    updatePayload.full_name = fullName;
+  }
+
   const { error } = await supabase
     .from('profiles')
-    .update({
-      phone: phone || null,
-      shipping_address: shippingAddress || null,
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', user.id);
 
   if (error) {

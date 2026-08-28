@@ -22,3 +22,5 @@
 *.pem
 .vscode/
 .idea/
+*.tsbuildinfo
+

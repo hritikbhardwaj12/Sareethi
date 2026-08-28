@@ -7,7 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useStoreData } from '@/context/StoreDataContext';
 import { updateProfileDetails } from '@/lib/auth/actions';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle2, ArrowRight, Loader2, UserCheck, Mail } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Loader2, UserCheck, Mail, Lock } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
@@ -17,22 +17,23 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState('');
 
-  // Autofill from saved profile & Supabase Auth
+  // Autofill from saved profile & Supabase Auth database
   useEffect(() => {
     let resolvedEmail = '';
 
     if (savedProfile) {
-      if (!name && savedProfile.fullName) setName(savedProfile.fullName);
+      if (savedProfile.fullName) setName((prev) => prev || savedProfile.fullName);
       if (savedProfile.email) {
         resolvedEmail = savedProfile.email;
         setEmail(savedProfile.email);
       }
-      if (!phone && savedProfile.phone) setPhone(savedProfile.phone);
-      if (!address && savedProfile.address) setAddress(savedProfile.address);
+      if (savedProfile.phone) setPhone((prev) => prev || savedProfile.phone);
+      if (savedProfile.address) setAddress((prev) => prev || savedProfile.address);
     }
 
     if (typeof window !== 'undefined') {
@@ -43,19 +44,29 @@ export default function CheckoutPage() {
       }
     }
 
-    const loadUserEmail = async () => {
+    const loadUserProfile = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
+          setIsLoggedIn(true);
           setEmail(user.email);
           resolvedEmail = user.email;
           if (typeof window !== 'undefined') {
             localStorage.setItem('sareethi_user_email', user.email);
           }
-          if (!name && (user.user_metadata?.full_name || user.user_metadata?.name)) {
-            setName(user.user_metadata.full_name || user.user_metadata?.name);
-          }
+
+          // Fetch DB profile details
+          const { data: dbProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          const profileName = dbProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '';
+          if (profileName) setName(profileName);
+          if (dbProfile?.phone) setPhone(dbProfile.phone);
+          if (dbProfile?.shipping_address) setAddress(dbProfile.shipping_address);
         } else if (!resolvedEmail) {
           setEmail('bhardwajhritik8@gmail.com');
         }
@@ -65,7 +76,7 @@ export default function CheckoutPage() {
         }
       }
     };
-    loadUserEmail();
+    loadUserProfile();
   }, [savedProfile]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -81,16 +92,16 @@ export default function CheckoutPage() {
         address: address.trim(),
       });
 
-      // 2. Try updating database profile
+      // 2. Try updating database profile (including full_name, phone, shipping_address)
       try {
-        await updateProfileDetails(phone.trim(), address.trim());
+        await updateProfileDetails(phone.trim(), address.trim(), name.trim());
       } catch (e) {
-        // Fallback gracefully
+        console.warn('DB Profile Sync Warning:', e);
       }
 
       // 3. Place order in data store with customer email
       const res = await placeOrder({
-        customerName: name.trim(),
+        customerName: name.trim() || 'Customer',
         customerEmail: email.trim(),
         customerPhone: phone.trim(),
         deliveryAddress: address.trim(),
@@ -192,17 +203,34 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Customer Email Address (For Order Bill & Invoice Delivery)</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
-                    placeholder="customer@example.com"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold text-gray-700">
+                      Customer Email Address (For Order Bill & Invoice Delivery)
+                    </label>
+                    {isLoggedIn && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <Lock className="w-2.5 h-2.5 text-emerald-600" /> Verified Account Email
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      readOnly={isLoggedIn}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none ${
+                        isLoggedIn ? 'bg-gray-100/90 text-gray-700 font-medium cursor-not-allowed' : 'bg-white'
+                      }`}
+                      placeholder="customer@example.com"
+                    />
+                    {isLoggedIn && (
+                      <Lock className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3.5" />
+                    )}
+                  </div>
                   <span className="text-[10px] text-gray-500 mt-0.5 block">
-                    📧 Official order confirmation, invoice receipt, and 5% OFF discount voucher will be sent to this email address.
+                    📧 Official order confirmation, invoice receipt, and 5% OFF discount voucher will be sent to your verified profile email.
                   </span>
                 </div>
 
@@ -214,6 +242,7 @@ export default function CheckoutPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
+                    placeholder="e.g. 9128737971"
                   />
                 </div>
 
@@ -225,6 +254,7 @@ export default function CheckoutPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none"
+                    placeholder="e.g. baba dham delhi"
                   />
                 </div>
 
