@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="space-y-4 pt-2">
-          <GoogleAuthButton label="Sign In with Google (Admin)" />
+          <GoogleAuthButton label="Sign In with Google (Admin)" nextUrl="/admin/dashboard" />
         </div>
 
         <div className="pt-4 border-t border-purple-800/80 space-y-3">

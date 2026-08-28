@@ -3,12 +3,12 @@
 import { useTransition } from 'react';
 import { signInWithGoogle } from '@/lib/auth/actions';
 
-export function GoogleAuthButton({ label = 'Continue with Google' }: { label?: string }) {
+export function GoogleAuthButton({ label = 'Continue with Google', nextUrl }: { label?: string; nextUrl?: string }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <button
-      onClick={() => startTransition(async () => await signInWithGoogle())}
+      onClick={() => startTransition(async () => await signInWithGoogle(nextUrl))}
       disabled={isPending}
       className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium transition-all disabled:opacity-50"
     >
