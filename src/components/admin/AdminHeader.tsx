@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Shield, RotateCcw, AlertTriangle, Users, AlertOctagon, Cpu, Package } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Receipt, Sparkles, Shield, RotateCcw, AlertTriangle, Users, AlertOctagon, Cpu, Package, LogOut } from 'lucide-react';
 import { SareethiLogo } from '@/components/ui/SareethiLogo';
+import { signOut } from '@/lib/auth/actions';
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -59,9 +60,14 @@ export function AdminHeader() {
             <span className="text-purple-200 font-mono text-[11px]">AI Worker:</span>
             <span className="font-bold text-emerald-400">OPERATIONAL</span>
           </div>
-          <Link href="/products" className="text-purple-200 hover:text-white underline text-[11px]">
-            Exit Admin
-          </Link>
+          <form action={signOut} className="inline-block">
+            <button
+              type="submit"
+              className="text-purple-200 hover:text-white underline text-[11px] flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" /> Logout Admin
+            </button>
+          </form>
         </div>
       </div>
     </header>
