@@ -203,34 +203,45 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <label className="font-semibold text-gray-700">
                       Customer Email Address (For Order Bill & Invoice Delivery)
                     </label>
                     {isLoggedIn && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        <Lock className="w-2.5 h-2.5 text-emerald-600" /> Verified Account Email
+                        <Lock className="w-2.5 h-2.5 text-emerald-600" /> Fixed Account Email
                       </span>
                     )}
                   </div>
-                  <div className="relative">
+
+                  {isLoggedIn ? (
+                    <div className="flex items-center justify-between p-3.5 bg-gray-100/90 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 select-none shadow-xs">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="w-7 h-7 rounded-lg bg-purple-950 text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div className="truncate">
+                          <p className="text-[10px] text-gray-500 font-normal uppercase tracking-wider">Locked Profile Email</p>
+                          <p className="font-mono text-xs font-bold text-gray-900 truncate">{email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-md border border-emerald-300 shrink-0">
+                        <Lock className="w-3 h-3 text-emerald-700" /> Locked
+                      </div>
+                    </div>
+                  ) : (
                     <input
                       type="email"
                       required
-                      readOnly={isLoggedIn}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none ${
-                        isLoggedIn ? 'bg-gray-100/90 text-gray-700 font-medium cursor-not-allowed' : 'bg-white'
-                      }`}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-950 focus:outline-none bg-white"
                       placeholder="customer@example.com"
                     />
-                    {isLoggedIn && (
-                      <Lock className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3.5" />
-                    )}
-                  </div>
-                  <span className="text-[10px] text-gray-500 mt-0.5 block">
-                    📧 Official order confirmation, invoice receipt, and 5% OFF discount voucher will be sent to your verified profile email.
+                  )}
+
+                  <span className="text-[10px] text-gray-500 mt-1 block">
+                    📧 Official order confirmation, invoice receipt, and 5% OFF discount voucher will be sent to your fixed Google account email.
                   </span>
                 </div>
 

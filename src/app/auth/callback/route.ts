@@ -16,6 +16,19 @@ export async function GET(request: Request) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
           const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
+
+          // Save Google signup email and profile details to Supabase database profiles table
+          try {
+            await supabase.from('profiles').upsert({
+              id: user.id,
+              email: user.email,
+              full_name: name,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' });
+          } catch (dbErr) {
+            console.warn('Profile DB upsert notice:', dbErr);
+          }
+
           await sendEmail({
             to: user.email,
             subject: 'Welcome to Sareethi Fashion — 10% OFF Voucher Inside!',

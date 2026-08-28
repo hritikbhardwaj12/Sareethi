@@ -55,6 +55,7 @@ export async function updateProfileDetails(phone: string, shippingAddress: strin
   if (!user) throw new Error('Not authenticated');
 
   const updatePayload: Record<string, any> = {
+    email: user.email,
     phone: phone || null,
     shipping_address: shippingAddress || null,
     updated_at: new Date().toISOString()
