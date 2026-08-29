@@ -98,10 +98,21 @@ export class FestivalWorker {
         }
 
         // Standard Intelligent Matching Logic
-        const matchingProduct = inventory.find((p) =>
-          cust.preferences.styles.some((s: string) => p.name.toLowerCase().includes(s.toLowerCase())) ||
-          p.price <= cust.preferences.price_max
-        ) || inventory[0];
+        const fallbackProduct = {
+          product_id: 'SAR-00001',
+          name: 'Red Woven Banarasi Silk Saree',
+          price: 5500,
+          category: 'Saree',
+        };
+
+        const matchingProduct =
+          (inventory && inventory.length > 0
+            ? inventory.find(
+                (p) =>
+                  cust.preferences?.styles?.some((s: string) => p.name.toLowerCase().includes(s.toLowerCase())) ||
+                  p.price <= cust.preferences?.price_max
+              ) || inventory[0]
+            : null) || fallbackProduct;
 
         const recommendedIds = [matchingProduct.product_id];
         const discountPercent = activeFestival.business_relevance === 'VERY_HIGH' ? 10 : 5;
