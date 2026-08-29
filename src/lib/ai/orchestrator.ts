@@ -1,12 +1,14 @@
 import { CatalogueWorker } from './catalogue-worker';
 import { OperationsWorker } from './operations-worker';
 import { CustomerWorker } from './customer-worker';
+import { FestivalWorker } from './festival-worker';
 import { createClient } from '@/lib/supabase/server';
 
 export class SareethiOrchestrator {
   public catalogueWorker = new CatalogueWorker();
   public operationsWorker = new OperationsWorker();
   public customerWorker = new CustomerWorker();
+  public festivalWorker = new FestivalWorker();
 
   /**
    * Executes AI Worker task with confidence check, retry handling, and Approval Queue routing

@@ -11,6 +11,7 @@ export function AdminHeader() {
 
   const navItems = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Festivals', href: '/admin/festivals', icon: Sparkles },
     { label: 'Orders', href: '/admin/orders', icon: Package },
     { label: 'Store', href: '/admin/store', icon: ShoppingBag },
     { label: 'Catalogue', href: '/admin/catalogue', icon: Sparkles },

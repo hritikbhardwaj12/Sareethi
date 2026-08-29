@@ -1,0 +1,205 @@
+{
+  "festivals": [
+    {
+      "id": "janmashtami_2026",
+      "name": "Janmashtami",
+      "date": "2026-09-04",
+      "category": "religious_festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 7,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["festive", "traditional", "silk"]
+    },
+    {
+      "id": "ganesh_chaturthi_2026",
+      "name": "Ganesh Chaturthi",
+      "date": "2026-09-14",
+      "category": "religious_festival",
+      "business_relevance": "HIGH",
+      "campaign_start_days": 10,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["festive", "traditional", "chanderi", "silk"]
+    },
+    {
+      "id": "anant_chaturdashi_2026",
+      "name": "Anant Chaturdashi",
+      "date": "2026-09-25",
+      "category": "religious_festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 5,
+      "campaign_type": "festival_reminder",
+      "active": true,
+      "recommended_tags": ["festive", "cotton", "suit"]
+    },
+    {
+      "id": "gandhi_jayanti_2026",
+      "name": "Gandhi Jayanti",
+      "date": "2026-10-02",
+      "category": "national_holiday",
+      "business_relevance": "LOW",
+      "campaign_start_days": 3,
+      "campaign_type": "optional_offer",
+      "active": false,
+      "recommended_tags": ["cotton"]
+    },
+    {
+      "id": "sharad_navratri_2026",
+      "name": "Sharad Navratri",
+      "start_date": "2026-10-11",
+      "end_date": "2026-10-20",
+      "date": "2026-10-11",
+      "category": "festival_season",
+      "business_relevance": "VERY_HIGH",
+      "campaign_start_days": 15,
+      "campaign_type": "festival_season_campaign",
+      "active": true,
+      "recommended_tags": ["traditional", "bright_colored", "silk", "festive"]
+    },
+    {
+      "id": "durga_puja_2026",
+      "name": "Durga Puja",
+      "date": "2026-10-19",
+      "category": "religious_festival",
+      "business_relevance": "VERY_HIGH",
+      "campaign_start_days": 15,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["banarasi", "silk", "festive", "traditional"]
+    },
+    {
+      "id": "dussehra_2026",
+      "name": "Dussehra",
+      "date": "2026-10-20",
+      "category": "religious_festival",
+      "business_relevance": "HIGH",
+      "campaign_start_days": 10,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["festive", "royal", "silk"]
+    },
+    {
+      "id": "karva_chauth_2026",
+      "name": "Karva Chauth",
+      "date": "2026-10-29",
+      "category": "occasion",
+      "business_relevance": "VERY_HIGH",
+      "campaign_start_days": 15,
+      "campaign_type": "occasion_campaign",
+      "active": true,
+      "recommended_tags": ["red", "maroon", "silk", "premium"]
+    },
+    {
+      "id": "dhanteras_2026",
+      "name": "Dhanteras",
+      "date": "2026-11-06",
+      "category": "festival",
+      "business_relevance": "HIGH",
+      "campaign_start_days": 10,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["gold", "silk", "festive"]
+    },
+    {
+      "id": "diwali_2026",
+      "name": "Diwali",
+      "date": "2026-11-08",
+      "category": "festival",
+      "business_relevance": "VERY_HIGH",
+      "campaign_start_days": 20,
+      "campaign_type": "major_campaign",
+      "active": true,
+      "recommended_tags": ["silk", "banarasi", "traditional", "premium_festive"]
+    },
+    {
+      "id": "govardhan_puja_2026",
+      "name": "Govardhan Puja",
+      "date": "2026-11-10",
+      "category": "religious_festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 5,
+      "campaign_type": "festival_reminder",
+      "active": true,
+      "recommended_tags": ["festive"]
+    },
+    {
+      "id": "bhai_dooj_2026",
+      "name": "Bhai Dooj",
+      "date": "2026-11-11",
+      "category": "festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 5,
+      "campaign_type": "festival_reminder",
+      "active": true,
+      "recommended_tags": ["festive", "suit"]
+    },
+    {
+      "id": "chhath_puja_2026",
+      "name": "Chhath Puja",
+      "date": "2026-11-15",
+      "category": "religious_festival",
+      "business_relevance": "HIGH",
+      "campaign_start_days": 10,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["traditional", "yellow", "red", "cotton", "silk"]
+    },
+    {
+      "id": "guru_nanak_jayanti_2026",
+      "name": "Guru Nanak Jayanti",
+      "date": "2026-11-24",
+      "category": "religious_festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 7,
+      "campaign_type": "festive_collection",
+      "active": true,
+      "recommended_tags": ["suit", "chanderi"]
+    },
+    {
+      "id": "christmas_2026",
+      "name": "Christmas",
+      "date": "2026-12-25",
+      "category": "festival",
+      "business_relevance": "MEDIUM",
+      "campaign_start_days": 10,
+      "campaign_type": "seasonal_collection",
+      "active": true,
+      "recommended_tags": ["red", "velvet", "party"]
+    }
+  ],
+  "campaign_groups": [
+    {
+      "id": "october_festive_season_2026",
+      "name": "October Grand Festive Collection (Navratri, Durga Puja & Dussehra)",
+      "festivals": ["sharad_navratri_2026", "durga_puja_2026", "dussehra_2026"],
+      "priority": "VERY_HIGH",
+      "campaign_start_date": "2026-09-26",
+      "target_tags": ["traditional", "bright_colored", "silk", "banarasi"]
+    },
+    {
+      "id": "karva_chauth_season_2026",
+      "name": "Karva Chauth Exclusive Bridal & Festive Sarees",
+      "festivals": ["karva_chauth_2026"],
+      "priority": "VERY_HIGH",
+      "campaign_start_date": "2026-10-14",
+      "target_tags": ["red", "maroon", "silk", "premium"]
+    },
+    {
+      "id": "diwali_season_2026",
+      "name": "Grand Diwali & Dhanteras Festive Collection",
+      "festivals": ["dhanteras_2026", "diwali_2026", "govardhan_puja_2026", "bhai_dooj_2026"],
+      "priority": "VERY_HIGH",
+      "campaign_start_date": "2026-10-19",
+      "target_tags": ["silk", "banarasi", "gold", "traditional"]
+    },
+    {
+      "id": "chhath_puja_season_2026",
+      "name": "Chhath Puja Traditional Saree Collection",
+      "festivals": ["chhath_puja_2026"],
+      "priority": "HIGH",
+      "campaign_start_date": "2026-11-05",
+      "target_tags": ["traditional", "yellow", "red", "silk"]
+    }
+  ]
+}
