@@ -11,15 +11,21 @@ import { updateSession } from '@/lib/supabase/middleware';
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
 
-  // 1. Admin Route Protection Barrier
+  // 1. Admin Route Authorization Protection Barrier
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bhardwajhritik8@gmail.com';
   const isMockAuth =
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.includes('mock') ||
     process.env.NODE_ENV === 'development';
 
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
-    if (!user && !isMockAuth) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+    const userEmail = user?.email?.toLowerCase();
+    const isOwner = userEmail === ADMIN_EMAIL.toLowerCase();
+
+    if (!user || (!isOwner && !isMockAuth)) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('error', 'unauthorized');
+      return NextResponse.redirect(loginUrl);
     }
   }
 

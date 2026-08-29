@@ -1,6 +1,6 @@
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SareethiLogo } from '@/components/ui/SareethiLogo';
-import { ShieldCheck, Cpu, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Cpu, ArrowLeft, AlertOctagon } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
@@ -8,7 +8,10 @@ export const metadata = {
   description: 'Authorized Store Owner Login for Sareethi AI-Operated Digital Operating System.',
 };
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const resolvedParams = await searchParams;
+  const isUnauthorized = resolvedParams?.error === 'unauthorized';
+
   return (
     <main className="min-h-screen bg-purple-950 flex flex-col justify-center items-center p-4 font-sans text-white relative overflow-hidden">
       {/* Background Decorative Glow */}
@@ -33,6 +36,17 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
+        {isUnauthorized && (
+          <div className="bg-rose-950/90 border border-rose-500 text-rose-200 p-4 rounded-xl text-xs space-y-1 text-left animate-in fade-in duration-300 shadow-lg">
+            <div className="flex items-center gap-2 font-bold text-rose-400">
+              <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" /> Access Denied: Incorrect Email
+            </div>
+            <p className="text-[11px] text-rose-200 leading-relaxed">
+              The Google account email you signed in with is not authorized for Admin Panel access. Only the registered store owner email (<strong>bhardwajhritik8@gmail.com</strong>) is permitted.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-4 pt-2">
           <GoogleAuthButton label="Sign In with Google (Admin)" nextUrl="/admin/dashboard" />
         </div>
@@ -44,7 +58,7 @@ export default function AdminLoginPage() {
           </div>
 
           <p className="text-[10px] text-purple-300">
-            Protected by Level 3 Autonomy Policy & Supabase RLS. Financial actions, catalog operations, and approvals require authenticated owner credentials.
+            Protected by Level 3 Autonomy Policy & Supabase RLS. Only <strong>bhardwajhritik8@gmail.com</strong> can access administrative financial controls and store configuration.
           </p>
         </div>
 

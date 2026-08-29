@@ -11,11 +11,14 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Direct automated Welcome Email dispatch on signup
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bhardwajhritik8@gmail.com';
+
+      // Direct automated Welcome Email dispatch & Profile role assignment
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email) {
           const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
+          const isOwnerEmail = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
           // Save Google signup email and profile details to Supabase database profiles table
           try {
@@ -23,10 +26,16 @@ export async function GET(request: Request) {
               id: user.id,
               email: user.email,
               full_name: name,
+              role_id: isOwnerEmail ? 'OWNER' : 'CUSTOMER',
               updated_at: new Date().toISOString(),
             }, { onConflict: 'id' });
           } catch (dbErr) {
             console.warn('Profile DB upsert notice:', dbErr);
+          }
+
+          // If user tried to sign in to admin portal with non-admin email
+          if (next.startsWith('/admin') && !isOwnerEmail) {
+            return NextResponse.redirect(`${origin}/admin/login?error=unauthorized`);
           }
 
           await sendEmail({
