@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
-import { getUpcomingFestivalsAction, runFestivalWorkerAction } from '@/lib/actions/festival-actions';
+import { getUpcomingFestivalsAction, runFestivalWorkerAction, dispatchBatchFestivalCampaignAction } from '@/lib/actions/festival-actions';
 import { FestivalWorkflowExecutionResult, FestivalEventData } from '@/lib/ai/types';
 import {
   Sparkles,
@@ -19,17 +19,20 @@ import {
   Lock,
   ArrowRight,
   ChevronRight,
-  Cpu
+  Cpu,
+  Mail
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminFestivalsPage() {
-  const [selectedDate, setSelectedDate] = useState('2026-10-15');
+  const [selectedDate, setSelectedDate] = useState('2026-08-29'); // Defaults to today's real date (2026-08-29)
   const [upcomingFestivals, setUpcomingFestivals] = useState<FestivalEventData[]>([]);
   const [campaignGroups, setCampaignGroups] = useState<any[]>([]);
   const [executionResult, setExecutionResult] = useState<FestivalWorkflowExecutionResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [failureDemoActive, setFailureDemoActive] = useState(false);
+  const [batchDispatchPending, setBatchDispatchPending] = useState(false);
+  const [batchDispatchResult, setBatchDispatchResult] = useState<{ dispatchedCount: number; dispatchedCustomers: string[] } | null>(null);
 
   // Load festival calendar on date change
   useEffect(() => {
@@ -47,6 +50,7 @@ export default function AdminFestivalsPage() {
 
   const handleRunWorker = (forceFailure: boolean = false) => {
     setFailureDemoActive(forceFailure);
+    setBatchDispatchResult(null);
     startTransition(async () => {
       try {
         const result = await runFestivalWorkerAction({
@@ -58,6 +62,22 @@ export default function AdminFestivalsPage() {
         console.error('Error executing festival worker:', err);
       }
     });
+  };
+
+  const handleDispatchBatchCampaign = async () => {
+    if (!executionResult || !executionResult.decisions.length) return;
+    setBatchDispatchPending(true);
+    try {
+      const res = await dispatchBatchFestivalCampaignAction({
+        festivalName: executionResult.festival.name,
+        decisions: executionResult.decisions,
+      });
+      setBatchDispatchResult(res);
+    } catch (err) {
+      console.error('Error in batch campaign dispatch:', err);
+    } finally {
+      setBatchDispatchPending(false);
+    }
   };
 
   return (
@@ -164,7 +184,25 @@ export default function AdminFestivalsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                {executionResult.decisions.length > 0 && (
+                  <button
+                    onClick={handleDispatchBatchCampaign}
+                    disabled={batchDispatchPending}
+                    className="px-4 py-2 bg-purple-950 hover:bg-purple-900 text-amber-400 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {batchDispatchPending ? (
+                      <>
+                        <RotateCw className="w-4 h-4 animate-spin" /> Dispatching Broadcast...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 text-amber-400" /> Broadcast Emails to All ({executionResult.decisions.length})
+                      </>
+                    )}
+                  </button>
+                )}
+
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                     executionResult.state === 'COMPLETED'
@@ -176,6 +214,19 @@ export default function AdminFestivalsPage() {
                 </span>
               </div>
             </div>
+
+            {/* Batch Dispatch Success Banner */}
+            {batchDispatchResult && (
+              <div className="bg-emerald-50 border border-emerald-300 p-4 rounded-2xl text-xs space-y-1 text-emerald-950 animate-in fade-in duration-300">
+                <div className="flex items-center gap-2 font-bold text-emerald-800 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  Broadcast Campaign Sent Simultaneously to All Eligible Customers!
+                </div>
+                <p className="text-xs text-emerald-800">
+                  Dispatched <strong>{batchDispatchResult.dispatchedCount}</strong> personalized festival follow-up emails in a batch process to: {batchDispatchResult.dispatchedCustomers.join(', ')}. Audit log recorded!
+                </p>
+              </div>
+            )}
 
             {/* 15-Step Workflow Progress Visualizer */}
             <div className="space-y-2">
@@ -239,9 +290,19 @@ export default function AdminFestivalsPage() {
             {/* Decision Cards */}
             {executionResult.decisions.length > 0 && (
               <div className="space-y-4 pt-2">
-                <h3 className="font-serif text-base font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-950" /> Personalized Re-engagement Recommendations ({executionResult.decisions.length})
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-base font-bold text-gray-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-purple-950" /> Personalized Re-engagement Recommendations ({executionResult.decisions.length})
+                  </h3>
+
+                  <button
+                    onClick={handleDispatchBatchCampaign}
+                    disabled={batchDispatchPending}
+                    className="px-3 py-1.5 bg-amber-400 text-purple-950 font-bold text-xs rounded-xl shadow hover:bg-amber-300 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Broadcast Campaign to All
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {executionResult.decisions.map((dec) => (
@@ -300,7 +361,7 @@ export default function AdminFestivalsPage() {
               <h2 className="font-serif text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" /> 2026 Festive Season Campaign Groups
               </h2>
-              <span className="text-xs text-gray-500 font-mono">Simulated Date: {selectedDate}</span>
+              <span className="text-xs text-gray-500 font-mono">Date: {selectedDate}</span>
             </div>
 
             <p className="text-xs text-gray-500">

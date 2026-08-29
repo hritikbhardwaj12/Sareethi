@@ -24,8 +24,8 @@ export async function tool_get_upcoming_festivals(input: UpcomingFestivalQueryIn
   upcoming_festivals: FestivalEventData[];
   active_campaign_groups: any[];
 }> {
-  const currentDateStr = input.today || '2026-10-15'; // Default to peak October festival window for demo
-  const lookahead = input.lookahead_days || 35;
+  const currentDateStr = input.today || '2026-08-29'; // Default to today's real date (2026-08-29)
+  const lookahead = input.lookahead_days || 120; // Look ahead up to 120 days for all upcoming festive seasons
 
   const upcoming: FestivalEventData[] = [];
 
