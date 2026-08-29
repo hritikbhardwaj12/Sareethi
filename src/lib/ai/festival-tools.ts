@@ -7,6 +7,14 @@ export interface UpcomingFestivalQueryInput {
   lookahead_days?: number;
 }
 
+function getDaysDifference(fromDateStr: string, toDateStr: string): number {
+  const [y1, m1, d1] = fromDateStr.split('-').map(Number);
+  const [y2, m2, d2] = toDateStr.split('-').map(Number);
+  const utc1 = Date.UTC(y1, m1 - 1, d1);
+  const utc2 = Date.UTC(y2, m2 - 1, d2);
+  return Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24));
+}
+
 /**
   * Tool 1: get_upcoming_festivals
   * Reads static festival JSON dataset and calculates days remaining & campaign window eligibility
@@ -17,23 +25,32 @@ export async function tool_get_upcoming_festivals(input: UpcomingFestivalQueryIn
   active_campaign_groups: any[];
 }> {
   const currentDateStr = input.today || '2026-10-15'; // Default to peak October festival window for demo
-  const lookahead = input.lookahead_days || 30;
-  const currentDate = new Date(currentDateStr);
+  const lookahead = input.lookahead_days || 35;
 
   const upcoming: FestivalEventData[] = [];
 
   for (const fest of festivalsData.festivals) {
     if (!fest.active) continue;
 
-    const festDate = new Date(fest.date);
-    const diffTime = festDate.getTime() - currentDate.getTime();
-    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const startDateStr = (fest as any).start_date || fest.date;
+    const endDateStr = (fest as any).end_date || fest.date;
 
-    // Check if within lookahead window and campaign start days
-    if (daysRemaining >= -2 && daysRemaining <= fest.campaign_start_days) {
+    const daysToStart = getDaysDifference(currentDateStr, startDateStr);
+    const daysToEnd = getDaysDifference(currentDateStr, endDateStr);
+
+    let daysRemaining = daysToStart;
+    let isOngoing = false;
+
+    if (daysToStart <= 0 && daysToEnd >= 0) {
+      isOngoing = true;
+      daysRemaining = 0;
+    }
+
+    // Check if within campaign window or currently ongoing
+    if (isOngoing || (daysToStart > 0 && daysToStart <= Math.max(fest.campaign_start_days, lookahead))) {
       upcoming.push({
         id: fest.id,
-        name: fest.name,
+        name: fest.name + (isOngoing ? ' (Ongoing)' : ''),
         date: fest.date,
         days_remaining: daysRemaining,
         business_relevance: fest.business_relevance as any,
@@ -44,8 +61,8 @@ export async function tool_get_upcoming_festivals(input: UpcomingFestivalQueryIn
 
   // Find relevant active campaign groups
   const activeGroups = festivalsData.campaign_groups.filter((grp) => {
-    const startDate = new Date(grp.campaign_start_date);
-    return currentDate >= startDate;
+    const diff = getDaysDifference(grp.campaign_start_date, currentDateStr);
+    return diff >= -5;
   });
 
   return {
