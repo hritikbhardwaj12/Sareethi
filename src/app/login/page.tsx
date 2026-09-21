@@ -1,5 +1,6 @@
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SareethiLogo } from '@/components/ui/SareethiLogo';
+import Link from 'next/link';
 
 export default function LoginPage() {
   return (
@@ -13,8 +14,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3 pt-2">
           <GoogleAuthButton label="Continue with Google" />
+          <Link
+            href="/products"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-xl border border-purple-200 font-medium text-xs transition-all"
+          >
+            Browse Storefront as Guest &rarr;
+          </Link>
         </div>
 
         <p className="text-[11px] text-gray-400 pt-4 border-t border-gray-100">

@@ -7,9 +7,24 @@ import { signInWithGoogle } from '@/lib/auth/actions';
 export function GoogleAuthButton({ label = 'Continue with Google', nextUrl }: { label?: string; nextUrl?: string }) {
   const [loading, setLoading] = useState(false);
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const isMock =
+    !supabaseUrl ||
+    supabaseUrl.includes('example.supabase.co') ||
+    supabaseKey.includes('mock') ||
+    supabaseKey === 'example-key';
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
+      // In mock/demo mode or if live Supabase is not configured, navigate directly
+      if (isMock) {
+        const target = nextUrl || '/';
+        window.location.href = target;
+        return;
+      }
+
       if (typeof window !== 'undefined') {
         const supabase = createClient();
         const origin = window.location.origin;
@@ -26,9 +41,10 @@ export function GoogleAuthButton({ label = 'Continue with Google', nextUrl }: { 
       await signInWithGoogle(nextUrl);
     } catch (e) {
       console.error('Google Sign In Error:', e);
-      try {
-        await signInWithGoogle(nextUrl);
-      } catch (err) {}
+      // Graceful fallback to target if auth fails
+      if (isMock) {
+        window.location.href = nextUrl || '/';
+      }
     } finally {
       setLoading(false);
     }

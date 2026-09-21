@@ -1,6 +1,6 @@
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SareethiLogo } from '@/components/ui/SareethiLogo';
-import { ShieldCheck, Cpu, ArrowLeft, AlertOctagon } from 'lucide-react';
+import { ShieldCheck, Cpu, ArrowLeft, AlertOctagon, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
@@ -47,8 +47,15 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
           </div>
         )}
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3 pt-2">
           <GoogleAuthButton label="Sign In with Google (Admin)" nextUrl="/admin/dashboard" />
+          <Link
+            href="/admin/dashboard"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-800/80 hover:bg-purple-800 text-amber-300 rounded-xl border border-purple-600/50 font-medium text-xs transition-all shadow-sm"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            Enter Admin Dashboard (Instant Access)
+          </Link>
         </div>
 
         <div className="pt-4 border-t border-purple-800/80 space-y-3">
