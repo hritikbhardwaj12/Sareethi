@@ -13,7 +13,7 @@
 .env*.local
 !.env.example
 
-# Antigravity artifacts & logs
+# Local workspace artifacts & scratch files
 .gemini/
 /scratch
 

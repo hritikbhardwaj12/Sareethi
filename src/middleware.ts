@@ -15,14 +15,16 @@ export async function middleware(request: NextRequest) {
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bhardwajhritik8@gmail.com';
   const isMockAuth =
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes('example.supabase.co') ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.includes('mock') ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'example-key' ||
     process.env.NODE_ENV === 'development';
 
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
     const userEmail = user?.email?.toLowerCase();
     const isOwner = userEmail === ADMIN_EMAIL.toLowerCase();
 
-    if (!user || (!isOwner && !isMockAuth)) {
+    if (!isMockAuth && (!user || !isOwner)) {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('error', 'unauthorized');
       return NextResponse.redirect(loginUrl);
@@ -36,7 +38,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+    "default-src 'self'; img-src 'self' data: https: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; font-src 'self' data: https:;"
   );
 
   return response;
